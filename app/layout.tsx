@@ -1,24 +1,11 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "Paths of Revelation | Sacred Places Atlas",
-  description: "A bilingual interactive atlas of sacred and historic places in Makkah and Madinah.",
-  openGraph: { title: "Paths of Revelation", description: "Explore sacred places in Makkah and Madinah.", images: ["/og.png"] },
-  icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-  },
+  title: 'دروب الوحي | Paths of Revelation',
+  description: 'A bilingual, sourced map of prophetic heritage in Makkah and Madinah.',
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
-  );
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <html lang="ar"><body>{children}</body></html>;
 }
