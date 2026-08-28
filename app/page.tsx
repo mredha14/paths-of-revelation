@@ -21,6 +21,7 @@ type Place = {
   photo: string;
   source: string;
 };
+type FavoriteList = { id: number; title: string; placeIds: number[] };
 const places: Place[] = [
   {
     id: 1,
@@ -105,6 +106,7 @@ export default function Home() {
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const [account, setAccount] = useState<{
     username: string;
+    displayName: string;
     role: string;
   } | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
@@ -117,10 +119,14 @@ export default function Home() {
   const [city, setCity] = useState<"all" | Place["city"]>("all");
   const [allPlaces, setAllPlaces] = useState<Place[]>(places);
   const [selected, setSelected] = useState(places[0]);
-  const [favorites, setFavorites] = useState<number[]>([1]);
-  const [itinerary, setItinerary] = useState(false);
+  const [favoriteLists, setFavoriteLists] = useState<FavoriteList[]>([]);
+  const [listsOpen, setListsOpen] = useState(false);
+  const [favoritePickerOpen, setFavoritePickerOpen] = useState(false);
+  const [pendingFavoritePlace, setPendingFavoritePlace] = useState<Place | null>(null);
+  const [favoriteListName, setFavoriteListName] = useState("");
+  const [favoriteError, setFavoriteError] = useState("");
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
   const [admin, setAdmin] = useState(false);
-  const [shared, setShared] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [form, setForm] = useState({
@@ -136,6 +142,7 @@ export default function Home() {
   const ar = language === "ar";
   const visible =
     city === "all" ? allPlaces : allPlaces.filter((p) => p.city === city);
+  const favoritePlaceCount = new Set(favoriteLists.flatMap((list) => list.placeIds)).size;
   useEffect(() => {
     fetch("/api/auth/config")
       .then((response) => response.json())
@@ -187,10 +194,59 @@ export default function Home() {
   }, [allPlaces]);
   const text = (p: Place, k: "title" | "type" | "era" | "description") =>
     ar ? p[k] : (p[(k + "En") as keyof Place] as string);
-  const favorite = (id: number) =>
-    setFavorites((x) =>
-      x.includes(id) ? x.filter((i) => i !== id) : [...x, id],
-    );
+  const tokenFor = async () => (await supabase?.auth.getSession())?.data.session?.access_token;
+  const loadFavoriteLists = async (token: string) => {
+    const response = await fetch("/api/favorite-lists", { headers: { Authorization: "Bearer " + token } });
+    if (!response.ok) throw new Error((await response.json()).error || "Could not load favorite lists.");
+    setFavoriteLists(await response.json());
+  };
+  const openFavoritePicker = (place: Place) => {
+    setPendingFavoritePlace(place);
+    setFavoriteError("");
+    if (!account) {
+      setAuthOpen(true);
+      return;
+    }
+    setFavoritePickerOpen(true);
+  };
+  const addPlaceToFavoriteList = async (listId: number) => {
+    if (!pendingFavoritePlace) return;
+    const token = await tokenFor();
+    if (!token) return;
+    setFavoriteBusy(true);
+    setFavoriteError("");
+    try {
+      const response = await fetch(`/api/favorite-lists/${listId}/places`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ placeId: pendingFavoritePlace.id }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      setFavoriteLists((current) => current.map((list) => list.id === listId && !list.placeIds.includes(pendingFavoritePlace.id) ? { ...list, placeIds: [...list.placeIds, pendingFavoritePlace.id] } : list));
+      setFavoritePickerOpen(false);
+      setPendingFavoritePlace(null);
+    } catch (error) {
+      setFavoriteError(error instanceof Error ? error.message : "Could not save this place.");
+    } finally {
+      setFavoriteBusy(false);
+    }
+  };
+  const createFavoriteList = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const token = await tokenFor();
+    if (!token) return;
+    setFavoriteBusy(true);
+    setFavoriteError("");
+    try {
+      const response = await fetch("/api/favorite-lists", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ title: favoriteListName }) });
+      const list = await response.json();
+      if (!response.ok) throw new Error(list.error);
+      setFavoriteLists((current) => [...current, list]);
+      setFavoriteListName("");
+      if (pendingFavoritePlace) await addPlaceToFavoriteList(list.id);
+    } catch (error) {
+      setFavoriteError(error instanceof Error ? error.message : "Could not create this list.");
+    } finally {
+      setFavoriteBusy(false);
+    }
+  };
   const selectFromList = (place: Place) => {
     setSelected(place);
     const map = mapInstance.current;
@@ -243,6 +299,12 @@ export default function Home() {
       return;
     }
     setAccount(profile);
+    try {
+      await loadFavoriteLists(result.data.session.access_token);
+      if (pendingFavoritePlace) setFavoritePickerOpen(true);
+    } catch (error) {
+      setFavoriteError(error instanceof Error ? error.message : "Could not load favorite lists.");
+    }
     setAuthOpen(false);
   };
   const updateForm = (field: string, value: string) =>
@@ -313,8 +375,8 @@ export default function Home() {
           </b>
         </a>
         <nav>
-          <button onClick={() => setItinerary(true)}>
-            {ar ? "قوائمي" : "My lists"} <em>{favorites.length}</em>
+          <button onClick={() => { setFavoriteError(""); account ? setListsOpen(true) : setAuthOpen(true); }}>
+            {ar ? "قوائمي المفضلة" : "My favorite lists"} <em>{favoritePlaceCount}</em>
           </button>
           {account?.role === "admin" && (
             <button onClick={() => setAdmin(true)}>
@@ -330,9 +392,10 @@ export default function Home() {
               onClick={() => {
                 supabase?.auth.signOut();
                 setAccount(null);
+                setFavoriteLists([]);
               }}
             >
-              {account.username} · {ar ? "خروج" : "Sign out"}
+              {account.displayName} · {ar ? "خروج" : "Sign out"}
             </button>
           ) : (
             <button className="solid" onClick={() => setAuthOpen(true)}>
@@ -444,8 +507,8 @@ export default function Home() {
             </p>
             <section>
               <h2>{text(selected, "title")}</h2>
-              <button onClick={() => favorite(selected.id)}>
-                {favorites.includes(selected.id) ? "♥" : "♡"}
+              <button aria-label={ar ? "إضافة إلى قائمة مفضلة" : "Add to a favorite list"} onClick={() => openFavoritePicker(selected)}>
+                {favoriteLists.some((list) => list.placeIds.includes(selected.id)) ? "♥" : "♡"}
               </button>
             </section>
             <p className="description">{text(selected, "description")}</p>
@@ -469,8 +532,8 @@ export default function Home() {
               >
                 {ar ? "الاتجاهات" : "Directions"} ↗
               </a>
-              <button onClick={() => setItinerary(true)}>
-                {ar ? "أضف إلى رحلة" : "Add to trip"} +
+              <button onClick={() => openFavoritePicker(selected)}>
+                {ar ? "أضف إلى المفضلة" : "Add to favorites"} +
               </button>
             </nav>
           </div>
@@ -505,39 +568,52 @@ export default function Home() {
           </p>
         </div>
       </section>
-      {itinerary && (
-        <div className="backdrop" onClick={() => setItinerary(false)}>
+      {listsOpen && (
+        <div className="backdrop" onClick={() => setListsOpen(false)}>
           <section className="modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close" onClick={() => setItinerary(false)}>
+            <button className="close" onClick={() => setListsOpen(false)}>
               ×
             </button>
-            <p>{ar ? "مخطط الرحلة" : "TRIP PLANNER"}</p>
-            <h2>{ar ? "عمرة وزيارة · ٣ أيام" : "Umrah & Visit · 3 days"}</h2>
+            <p>{ar ? "قوائمي" : "MY LISTS"}</p>
+            <h2>{ar ? "قوائم الأماكن المفضلة" : "Favorite place lists"}</h2>
             <small>
               {ar
-                ? "رتّب الأماكن ثم أرسل رابطاً خاصاً لأصدقائك."
-                : "Arrange saved places, then send a private link to friends."}
+                ? "أنشئ قوائم باسمك واحفظ الأماكن في القائمة المناسبة."
+                : "Create named lists and save each place in the list that fits."}
             </small>
             <div className="trip-items">
-              {allPlaces
-                .filter((p) => favorites.includes(p.id))
-                .map((p) => (
-                  <div key={p.id}>
-                    <span>⠿</span>
-                    <b>{text(p, "title")}</b>
-                    <small>{p.city}</small>
-                  </div>
-                ))}
+              {favoriteLists.map((list) => (
+                <div key={list.id}>
+                  <span>♥</span>
+                  <b>{list.title}</b>
+                  <small>{list.placeIds.length} {ar ? "أماكن" : "places"}</small>
+                </div>
+              ))}
+              {!favoriteLists.length && <div><small>{ar ? "لا توجد قوائم بعد. أنشئ قائمتك الأولى." : "No lists yet. Create your first one."}</small></div>}
             </div>
-            <button className="solid wide" onClick={() => setShared(true)}>
-              {shared
-                ? ar
-                  ? "تم نسخ رابط المشاركة ✓"
-                  : "Share link copied ✓"
-                : ar
-                  ? "مشاركة مع الأصدقاء"
-                  : "Share with friends"}
-            </button>
+            <form className="form" onSubmit={createFavoriteList}>
+              <label className="full">{ar ? "اسم القائمة" : "List name"}<input required maxLength={80} value={favoriteListName} onChange={(e) => setFavoriteListName(e.target.value)} placeholder={ar ? "مثال: أماكن أود زيارتها" : "For example: Places to visit"} /></label>
+              {favoriteError && <p className="form-error">{favoriteError}</p>}
+              <button disabled={favoriteBusy} className="solid wide">{favoriteBusy ? (ar ? "جارٍ الإنشاء…" : "Creating…") : (ar ? "إنشاء قائمة جديدة" : "Create new list")}</button>
+            </form>
+          </section>
+        </div>
+      )}
+      {favoritePickerOpen && pendingFavoritePlace && (
+        <div className="backdrop" onClick={() => setFavoritePickerOpen(false)}>
+          <section className="modal" onClick={(e) => e.stopPropagation()}>
+            <button className="close" onClick={() => setFavoritePickerOpen(false)}>×</button>
+            <p>{ar ? "إضافة إلى المفضلة" : "ADD TO FAVORITES"}</p>
+            <h2>{text(pendingFavoritePlace, "title")}</h2>
+            <small>{ar ? "اختر القائمة التي تريد حفظ هذا المكان فيها، أو أنشئ قائمة جديدة." : "Choose a list for this place, or create a new one."}</small>
+            <div className="trip-items">
+              {favoriteLists.map((list) => <div key={list.id}><b>{list.title}</b><button disabled={favoriteBusy || list.placeIds.includes(pendingFavoritePlace.id)} onClick={() => addPlaceToFavoriteList(list.id)}>{list.placeIds.includes(pendingFavoritePlace.id) ? (ar ? "محفوظ" : "Saved") : (ar ? "إضافة" : "Add")}</button></div>)}
+            </div>
+            <form className="form" onSubmit={createFavoriteList}>
+              <label className="full">{ar ? "اسم القائمة الجديدة" : "New list name"}<input required maxLength={80} value={favoriteListName} onChange={(e) => setFavoriteListName(e.target.value)} placeholder={ar ? "مثال: زيارتي القادمة" : "For example: Next visit"} /></label>
+              {favoriteError && <p className="form-error">{favoriteError}</p>}
+              <button disabled={favoriteBusy} className="solid wide">{ar ? "إنشاء وإضافة المكان" : "Create and add place"}</button>
+            </form>
           </section>
         </div>
       )}

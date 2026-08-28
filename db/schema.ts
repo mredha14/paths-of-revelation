@@ -50,6 +50,24 @@ export const favorites = sqliteTable('favorites', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 }, (table) => [uniqueIndex('idx_favorites_profile_place').on(table.profileId, table.placeId)]);
 
+export const favoriteLists = sqliteTable('favorite_lists', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  profileId: integer('profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [index('idx_favorite_lists_profile').on(table.profileId)]);
+
+export const favoriteListPlaces = sqliteTable('favorite_list_places', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  favoriteListId: integer('favorite_list_id').notNull().references(() => favoriteLists.id, { onDelete: 'cascade' }),
+  placeId: integer('place_id').notNull().references(() => places.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [
+  uniqueIndex('idx_favorite_list_places_list_place').on(table.favoriteListId, table.placeId),
+  index('idx_favorite_list_places_list').on(table.favoriteListId),
+]);
+
 export const itineraries = sqliteTable('itineraries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   profileId: integer('profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),

@@ -22,7 +22,7 @@ export async function GET(request: Request) {
         .values({
           authSubject: identity.user.id,
           username,
-          displayName: username,
+    displayName: String(identity.user.user_metadata.full_name ?? username),
           role: identity.role,
           createdAt: new Date(),
         })
@@ -31,6 +31,7 @@ export async function GET(request: Request) {
   return Response.json({
     id: profile.id,
     username: profile.username,
+    displayName: String(identity.user.user_metadata.full_name ?? profile.displayName ?? profile.username),
     role: identity.role,
     email: identity.user.email,
   });
