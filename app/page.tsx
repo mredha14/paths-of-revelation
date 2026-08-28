@@ -128,6 +128,8 @@ export default function Home() {
   const [favoriteError, setFavoriteError] = useState("");
   const [favoriteBusy, setFavoriteBusy] = useState(false);
   const [admin, setAdmin] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ title: "", titleEn: "", description: "", descriptionEn: "" });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -402,13 +404,10 @@ export default function Home() {
       setSelected(allPlaces.find((place) => place.id !== selected.id) ?? places[0]);
     } catch (error) { setFormError(error instanceof Error ? error.message : "Could not delete this place."); } finally { setSaving(false); }
   };
-  const editPlace = async () => {
-    const title = window.prompt(ar ? "العنوان بالعربية" : "Arabic title", selected.title); if (title === null) return;
-    const titleEn = window.prompt(ar ? "العنوان بالإنجليزية" : "English title", selected.titleEn); if (titleEn === null) return;
-    const description = window.prompt(ar ? "الوصف بالعربية" : "Arabic description", selected.description); if (description === null) return;
-    const descriptionEn = window.prompt(ar ? "الوصف بالإنجليزية" : "English description", selected.descriptionEn); if (descriptionEn === null) return;
+  const editPlace = async (event: React.FormEvent) => {
+    event.preventDefault();
     const token = (await supabase?.auth.getSession())?.data.session?.access_token; if (!token) return;
-    setSaving(true); try { const response=await fetch(`/api/places/${selected.id}`,{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({title,titleEn,description,descriptionEn})}); const data=await response.json(); if(!response.ok)throw new Error(data.error); const updated={...selected,title,titleEn,description,descriptionEn}; setSelected(updated); setAllPlaces(current=>current.map(place=>place.id===updated.id?updated:place)); } catch(error){setFormError(error instanceof Error?error.message:"Could not update this place.");} finally{setSaving(false);}
+    setSaving(true); try { const response=await fetch(`/api/places/${selected.id}`,{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify(editForm)}); const data=await response.json(); if(!response.ok)throw new Error(data.error); const updated={...selected,...editForm}; setSelected(updated); setAllPlaces(current=>current.map(place=>place.id===updated.id?updated:place)); setEditOpen(false); } catch(error){setFormError(error instanceof Error?error.message:"Could not update this place.");} finally{setSaving(false);}
   };
   return (
     <main dir={ar ? "rtl" : "ltr"} className="site">
@@ -584,7 +583,7 @@ export default function Home() {
                 {ar ? "أضف إلى المفضلة" : "Add to favorites"} +
               </button>
             </nav>
-            {account?.role === "admin" && <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button disabled={saving} onClick={editPlace} style={{ flex: 1, border: "1px solid #315e4c", background: "transparent", color: "#315e4c", padding: "8px 10px" }}>{ar ? "تعديل الموقع" : "Edit place"}</button><button disabled={saving} onClick={deletePlace} style={{ flex: 1, border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", padding: "8px 10px" }}>{ar ? "حذف الموقع" : "Delete place"}</button></div>}
+            {account?.role === "admin" && <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button disabled={saving} onClick={() => { setEditForm({title:selected.title,titleEn:selected.titleEn,description:selected.description,descriptionEn:selected.descriptionEn}); setEditOpen(true); }} style={{ flex: 1, border: "1px solid #315e4c", background: "transparent", color: "#315e4c", padding: "8px 10px" }}>{ar ? "تعديل الموقع" : "Edit place"}</button><button disabled={saving} onClick={deletePlace} style={{ flex: 1, border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", padding: "8px 10px" }}>{ar ? "حذف الموقع" : "Delete place"}</button></div>}
           </div>
         </article>
       </section>
@@ -785,6 +784,7 @@ export default function Home() {
           </section>
         </div>
       )}
+      {editOpen && <div className="backdrop" onClick={() => setEditOpen(false)}><section className="modal admin" onClick={(e) => e.stopPropagation()}><button className="close" onClick={() => setEditOpen(false)}>×</button><p>{ar ? "تعديل الموقع" : "EDIT PLACE"}</p><h2>{ar ? "تعديل بيانات الموقع" : "Edit place details"}</h2><form className="form" onSubmit={editPlace}><label>{ar ? "العنوان بالعربية" : "Arabic title"}<input required value={editForm.title} onChange={(e)=>setEditForm(x=>({...x,title:e.target.value}))}/></label><label>{ar ? "العنوان بالإنجليزية" : "English title"}<input required value={editForm.titleEn} onChange={(e)=>setEditForm(x=>({...x,titleEn:e.target.value}))}/></label><label className="full">{ar ? "الوصف بالعربية" : "Arabic description"}<textarea required value={editForm.description} onChange={(e)=>setEditForm(x=>({...x,description:e.target.value}))}/></label><label className="full">{ar ? "الوصف بالإنجليزية" : "English description"}<textarea required value={editForm.descriptionEn} onChange={(e)=>setEditForm(x=>({...x,descriptionEn:e.target.value}))}/></label>{formError&&<p className="form-error">{formError}</p>}<button disabled={saving} className="solid wide">{ar ? "حفظ التعديلات" : "Save changes"}</button></form></section></div>}
       {authOpen && (
         <div className="backdrop" onClick={() => setAuthOpen(false)}>
           <section
