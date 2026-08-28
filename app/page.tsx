@@ -188,11 +188,12 @@ export default function Home() {
     const layer = L.layerGroup().addTo(map);
     markers.current = layer;
     allPlaces.forEach((place) => {
+      const isSelected = place.id === selected.id;
       const marker = L.circleMarker([place.lat, place.lng], {
-        radius: 9,
+        radius: isSelected ? 12 : 9,
         color: "#fff",
         weight: 3,
-        fillColor: "#315e4c",
+        fillColor: isSelected ? "#ba8132" : "#315e4c",
         fillOpacity: 1,
       }).addTo(layer);
       marker.bindTooltip(place.title, {
@@ -207,7 +208,7 @@ export default function Home() {
         });
       });
     });
-  }, [allPlaces]);
+  }, [allPlaces, selected]);
   const text = (p: Place, k: "title" | "type" | "era" | "description") =>
     ar ? p[k] : (p[(k + "En") as keyof Place] as string);
   const tokenFor = async () => (await supabase?.auth.getSession())?.data.session?.access_token;
