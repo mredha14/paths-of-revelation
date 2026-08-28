@@ -202,7 +202,14 @@ export default function Home() {
   };
   const submitAuth = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!supabase) return;
+    if (!supabase) {
+      setAuthError(
+        ar
+          ? "خدمة تسجيل الدخول لم تجهز بعد. أعد تحميل الصفحة ثم حاول مرة أخرى."
+          : "Sign-in is still connecting. Refresh the page, then try again.",
+      );
+      return;
+    }
     setAuthError("");
     const result =
       authMode === "signup"
