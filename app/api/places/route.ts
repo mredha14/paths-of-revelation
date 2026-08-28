@@ -1,5 +1,6 @@
 import { getDb } from '@/db';
 import { placePhotos, places } from '@/db/schema';
+import { requireSupabaseUser } from '@/lib/supabase';
 
 type NewPlace = { city: 'Makkah' | 'Madinah'; title: string; titleEn: string; description: string; descriptionEn: string; category: string; lat: number; lng: number; photo: string };
 
@@ -14,6 +15,8 @@ const categoryLabels: Record<string, { ar: string; en: string }> = {
 };
 
 export async function POST(request: Request) {
+  const identity = await requireSupabaseUser(request);
+  if (!identity || identity.role !== 'admin') return Response.json({ error: 'Administrator access is required.' }, { status: 403 });
   const body = await request.json() as NewPlace;
   if (!body.title || !body.titleEn || !body.description || !body.descriptionEn || !categoryLabels[body.category] || !Number.isFinite(body.lat) || !Number.isFinite(body.lng)) {
     return Response.json({ error: 'Please complete all required place fields.' }, { status: 400 });
