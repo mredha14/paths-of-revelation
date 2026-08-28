@@ -110,6 +110,7 @@ export default function Home() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [authEmail, setAuthEmail] = useState("");
+  const [authName, setAuthName] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [language, setLanguage] = useState<"ar" | "en">("ar");
@@ -208,6 +209,7 @@ export default function Home() {
         ? await supabase.auth.signUp({
             email: authEmail,
             password: authPassword,
+            options: { data: { full_name: authName } },
           })
         : await supabase.auth.signInWithPassword({
             email: authEmail,
@@ -676,6 +678,16 @@ export default function Home() {
                   : "Start your journey"}
             </h2>
             <form className="form" onSubmit={submitAuth}>
+              {authMode === "signup" && (
+                <label className="full">
+                  {ar ? "الاسم" : "Name"}
+                  <input
+                    required
+                    value={authName}
+                    onChange={(e) => setAuthName(e.target.value)}
+                  />
+                </label>
+              )}
               <label className="full">
                 {ar ? "البريد الإلكتروني" : "Email"}
                 <input
