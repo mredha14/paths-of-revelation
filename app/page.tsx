@@ -668,12 +668,12 @@ export default function Home() {
             <h2>{text(pendingFavoritePlace, "title")}</h2>
             <small>{ar ? "يمكنك حفظ هذا المكان في أكثر من قائمة. اختر كل القوائم المناسبة، أو أنشئ قائمة جديدة." : "You can save this place in more than one list. Choose every list that fits, or create a new one."}</small>
             <div className="trip-items">
-              {favoriteLists.map((list) => <div key={list.id}><b>{list.title}</b><button disabled={favoriteBusy || list.placeIds.includes(pendingFavoritePlace.id)} onClick={() => addPlaceToFavoriteList(list.id)}>{list.placeIds.includes(pendingFavoritePlace.id) ? (ar ? "محفوظ" : "Saved") : (ar ? "إضافة" : "Add")}</button></div>)}
+              {favoriteLists.map((list) => <div key={list.id}><b>{list.title}</b>{list.placeIds.includes(pendingFavoritePlace.id) ? <button disabled={favoriteBusy} onClick={() => removePlaceFromFavoriteList(list.id, pendingFavoritePlace.id)} style={{ color: "#9a493a", borderColor: "#b45a4a" }}>{ar ? "إزالة" : "Remove"}</button> : <button disabled={favoriteBusy} onClick={() => addPlaceToFavoriteList(list.id)}>{ar ? "إضافة" : "Add"}</button>}</div>)}
             </div>
             <form className="form" onSubmit={createFavoriteList}>
               <label className="full">{ar ? "اسم القائمة الجديدة" : "New list name"}<input required maxLength={80} value={favoriteListName} onChange={(e) => setFavoriteListName(e.target.value)} placeholder={ar ? "مثال: زيارتي القادمة" : "For example: Next visit"} /></label>
               {favoriteError && <p className="form-error">{favoriteError}</p>}
-              <button disabled={favoriteBusy} className="solid wide">{ar ? "إنشاء وإضافة المكان" : "Create and add place"}</button>
+              <button disabled={favoriteBusy} className="solid wide" style={{ fontSize: 12, fontWeight: 400, padding: "9px" }}>{ar ? "إنشاء وإضافة المكان" : "Create and add place"}</button>
             </form>
           </section>
         </div>
