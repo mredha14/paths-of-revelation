@@ -121,6 +121,7 @@ export default function Home() {
   const [selected, setSelected] = useState(places[0]);
   const [favoriteLists, setFavoriteLists] = useState<FavoriteList[]>([]);
   const [listsOpen, setListsOpen] = useState(false);
+  const [openFavoriteListId, setOpenFavoriteListId] = useState<number | null>(null);
   const [favoritePickerOpen, setFavoritePickerOpen] = useState(false);
   const [pendingFavoritePlace, setPendingFavoritePlace] = useState<Place | null>(null);
   const [favoriteListName, setFavoriteListName] = useState("");
@@ -143,6 +144,7 @@ export default function Home() {
   const visible =
     city === "all" ? allPlaces : allPlaces.filter((p) => p.city === city);
   const favoritePlaceCount = new Set(favoriteLists.flatMap((list) => list.placeIds)).size;
+  const openFavoriteList = favoriteLists.find((list) => list.id === openFavoriteListId) ?? null;
   useEffect(() => {
     fetch("/api/auth/config")
       .then((response) => response.json())
@@ -220,8 +222,6 @@ export default function Home() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       setFavoriteLists((current) => current.map((list) => list.id === listId && !list.placeIds.includes(pendingFavoritePlace.id) ? { ...list, placeIds: [...list.placeIds, pendingFavoritePlace.id] } : list));
-      setFavoritePickerOpen(false);
-      setPendingFavoritePlace(null);
     } catch (error) {
       setFavoriteError(error instanceof Error ? error.message : "Could not save this place.");
     } finally {
@@ -375,7 +375,7 @@ export default function Home() {
           </b>
         </a>
         <nav>
-          <button onClick={() => { setFavoriteError(""); account ? setListsOpen(true) : setAuthOpen(true); }}>
+          <button onClick={() => { setFavoriteError(""); setOpenFavoriteListId(null); account ? setListsOpen(true) : setAuthOpen(true); }}>
             {ar ? "قوائمي المفضلة" : "My favorite lists"} <em>{favoritePlaceCount}</em>
           </button>
           {account?.role === "admin" && (
@@ -569,33 +569,33 @@ export default function Home() {
         </div>
       </section>
       {listsOpen && (
-        <div className="backdrop" onClick={() => setListsOpen(false)}>
+        <div className="backdrop" onClick={() => { setListsOpen(false); setOpenFavoriteListId(null); }}>
           <section className="modal" onClick={(e) => e.stopPropagation()}>
-            <button className="close" onClick={() => setListsOpen(false)}>
+            <button className="close" onClick={() => { setListsOpen(false); setOpenFavoriteListId(null); }}>
               ×
             </button>
-            <p>{ar ? "قوائمي" : "MY LISTS"}</p>
-            <h2>{ar ? "قوائم الأماكن المفضلة" : "Favorite place lists"}</h2>
-            <small>
-              {ar
-                ? "أنشئ قوائم باسمك واحفظ الأماكن في القائمة المناسبة."
-                : "Create named lists and save each place in the list that fits."}
-            </small>
-            <div className="trip-items">
-              {favoriteLists.map((list) => (
-                <div key={list.id}>
-                  <span>♥</span>
-                  <b>{list.title}</b>
-                  <small>{list.placeIds.length} {ar ? "أماكن" : "places"}</small>
-                </div>
-              ))}
-              {!favoriteLists.length && <div><small>{ar ? "لا توجد قوائم بعد. أنشئ قائمتك الأولى." : "No lists yet. Create your first one."}</small></div>}
-            </div>
-            <form className="form" onSubmit={createFavoriteList}>
-              <label className="full">{ar ? "اسم القائمة" : "List name"}<input required maxLength={80} value={favoriteListName} onChange={(e) => setFavoriteListName(e.target.value)} placeholder={ar ? "مثال: أماكن أود زيارتها" : "For example: Places to visit"} /></label>
-              {favoriteError && <p className="form-error">{favoriteError}</p>}
-              <button disabled={favoriteBusy} className="solid wide">{favoriteBusy ? (ar ? "جارٍ الإنشاء…" : "Creating…") : (ar ? "إنشاء قائمة جديدة" : "Create new list")}</button>
-            </form>
+            {openFavoriteList ? <>
+              <button className="modal-back" onClick={() => setOpenFavoriteListId(null)}>← {ar ? "كل القوائم" : "All lists"}</button>
+              <p>{ar ? "قائمة مفضلة" : "FAVORITE LIST"}</p>
+              <h2>{openFavoriteList.title}</h2>
+              <small>{openFavoriteList.placeIds.length ? (ar ? "اختر مكاناً لعرضه على الخريطة." : "Choose a place to view it on the map.") : (ar ? "هذه القائمة فارغة حتى الآن." : "This list is empty for now.")}</small>
+              <div className="favorite-place-items">
+                {allPlaces.filter((place) => openFavoriteList.placeIds.includes(place.id)).map((place) => <button key={place.id} onClick={() => { selectFromList(place); setListsOpen(false); setOpenFavoriteListId(null); }}><img src={place.photo} alt="" /><span><b>{text(place, "title")}</b><small>{place.city}</small></span><i>↗</i></button>)}
+              </div>
+            </> : <>
+              <p>{ar ? "قوائمي" : "MY LISTS"}</p>
+              <h2>{ar ? "قوائم الأماكن المفضلة" : "Favorite place lists"}</h2>
+              <small>{ar ? "أنشئ قوائم باسمك واحفظ الأماكن في القائمة المناسبة." : "Create named lists and save each place in the list that fits."}</small>
+              <div className="trip-items">
+                {favoriteLists.map((list) => <button type="button" className="favorite-list-row" key={list.id} onClick={() => setOpenFavoriteListId(list.id)}><span>♥</span><b>{list.title}</b><small>{list.placeIds.length} {ar ? "أماكن" : "places"}</small><i>›</i></button>)}
+                {!favoriteLists.length && <div><small>{ar ? "لا توجد قوائم بعد. أنشئ قائمتك الأولى." : "No lists yet. Create your first one."}</small></div>}
+              </div>
+              <form className="form" onSubmit={createFavoriteList}>
+                <label className="full">{ar ? "اسم القائمة" : "List name"}<input required maxLength={80} value={favoriteListName} onChange={(e) => setFavoriteListName(e.target.value)} placeholder={ar ? "مثال: أماكن أود زيارتها" : "For example: Places to visit"} /></label>
+                {favoriteError && <p className="form-error">{favoriteError}</p>}
+                <button disabled={favoriteBusy} className="solid wide">{favoriteBusy ? (ar ? "جارٍ الإنشاء…" : "Creating…") : (ar ? "إنشاء قائمة جديدة" : "Create new list")}</button>
+              </form>
+            </>}
           </section>
         </div>
       )}
@@ -605,7 +605,7 @@ export default function Home() {
             <button className="close" onClick={() => setFavoritePickerOpen(false)}>×</button>
             <p>{ar ? "إضافة إلى المفضلة" : "ADD TO FAVORITES"}</p>
             <h2>{text(pendingFavoritePlace, "title")}</h2>
-            <small>{ar ? "اختر القائمة التي تريد حفظ هذا المكان فيها، أو أنشئ قائمة جديدة." : "Choose a list for this place, or create a new one."}</small>
+            <small>{ar ? "يمكنك حفظ هذا المكان في أكثر من قائمة. اختر كل القوائم المناسبة، أو أنشئ قائمة جديدة." : "You can save this place in more than one list. Choose every list that fits, or create a new one."}</small>
             <div className="trip-items">
               {favoriteLists.map((list) => <div key={list.id}><b>{list.title}</b><button disabled={favoriteBusy || list.placeIds.includes(pendingFavoritePlace.id)} onClick={() => addPlaceToFavoriteList(list.id)}>{list.placeIds.includes(pendingFavoritePlace.id) ? (ar ? "محفوظ" : "Saved") : (ar ? "إضافة" : "Add")}</button></div>)}
             </div>
