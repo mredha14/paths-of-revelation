@@ -15,6 +15,13 @@
       "when": 1787948042336,
       "tag": "0001_youthful_absorbing_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787950000000,
+      "tag": "0002_seed_default_places",
+      "breakpoints": true
     }
   ]
 }

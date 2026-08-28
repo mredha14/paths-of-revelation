@@ -219,8 +219,8 @@ export default function Home() {
     setFavoriteError("");
     try {
       const response = await fetch(`/api/favorite-lists/${listId}/places`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ placeId: pendingFavoritePlace.id }) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
+      const data = await response.json().catch(() => ({} as { error?: string }));
+      if (!response.ok) throw new Error(data.error || "Could not save this place to the selected list.");
       setFavoriteLists((current) => current.map((list) => list.id === listId && !list.placeIds.includes(pendingFavoritePlace.id) ? { ...list, placeIds: [...list.placeIds, pendingFavoritePlace.id] } : list));
     } catch (error) {
       setFavoriteError(error instanceof Error ? error.message : "Could not save this place.");
