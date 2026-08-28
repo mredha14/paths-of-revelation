@@ -130,6 +130,7 @@ export default function Home() {
   const [admin, setAdmin] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [form, setForm] = useState({
     title: "",
     titleEn: "",
@@ -138,7 +139,6 @@ export default function Home() {
     category: "mosque",
     description: "",
     descriptionEn: "",
-    photo: "",
   });
   const ar = language === "ar";
   const visible =
@@ -353,6 +353,7 @@ export default function Home() {
       );
       return;
     }
+    if (!photoFile) { setFormError(ar ? "اختر صورة للمكان." : "Choose a photo for this place."); return; }
     const token = (await supabase?.auth.getSession())?.data.session
       ?.access_token;
     if (!token) {
@@ -363,14 +364,10 @@ export default function Home() {
     }
     setSaving(true);
     try {
-      const response = await fetch("/api/places", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token,
-        },
-        body: JSON.stringify({ ...form, lat, lng }),
-      });
+      const payload = new FormData();
+      Object.entries({ ...form, lat: String(lat), lng: String(lng) }).forEach(([key, value]) => payload.append(key, value));
+      payload.append("photo", photoFile);
+      const response = await fetch("/api/places", { method: "POST", headers: { Authorization: "Bearer " + token }, body: payload });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       setAllPlaces((current) => [...current, data]);
@@ -384,8 +381,8 @@ export default function Home() {
         category: "mosque",
         description: "",
         descriptionEn: "",
-        photo: "",
       });
+      setPhotoFile(null);
     } catch (error) {
       setFormError(
         error instanceof Error ? error.message : "Could not save this place.",
@@ -393,6 +390,25 @@ export default function Home() {
     } finally {
       setSaving(false);
     }
+  };
+  const deletePlace = async () => {
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token;
+    if (!token) return;
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/places/${selected.id}`, { method: "DELETE", headers: { Authorization: "Bearer " + token } });
+      if (!response.ok) throw new Error("Could not delete this place.");
+      setAllPlaces((current) => current.filter((place) => place.id !== selected.id));
+      setSelected(allPlaces.find((place) => place.id !== selected.id) ?? places[0]);
+    } catch (error) { setFormError(error instanceof Error ? error.message : "Could not delete this place."); } finally { setSaving(false); }
+  };
+  const editPlace = async () => {
+    const title = window.prompt(ar ? "العنوان بالعربية" : "Arabic title", selected.title); if (title === null) return;
+    const titleEn = window.prompt(ar ? "العنوان بالإنجليزية" : "English title", selected.titleEn); if (titleEn === null) return;
+    const description = window.prompt(ar ? "الوصف بالعربية" : "Arabic description", selected.description); if (description === null) return;
+    const descriptionEn = window.prompt(ar ? "الوصف بالإنجليزية" : "English description", selected.descriptionEn); if (descriptionEn === null) return;
+    const token = (await supabase?.auth.getSession())?.data.session?.access_token; if (!token) return;
+    setSaving(true); try { const response=await fetch(`/api/places/${selected.id}`,{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({title,titleEn,description,descriptionEn})}); const data=await response.json(); if(!response.ok)throw new Error(data.error); const updated={...selected,title,titleEn,description,descriptionEn}; setSelected(updated); setAllPlaces(current=>current.map(place=>place.id===updated.id?updated:place)); } catch(error){setFormError(error instanceof Error?error.message:"Could not update this place.");} finally{setSaving(false);}
   };
   return (
     <main dir={ar ? "rtl" : "ltr"} className="site">
@@ -568,6 +584,7 @@ export default function Home() {
                 {ar ? "أضف إلى المفضلة" : "Add to favorites"} +
               </button>
             </nav>
+            {account?.role === "admin" && <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button disabled={saving} onClick={editPlace} style={{ flex: 1, border: "1px solid #315e4c", background: "transparent", color: "#315e4c", padding: "8px 10px" }}>{ar ? "تعديل الموقع" : "Edit place"}</button><button disabled={saving} onClick={deletePlace} style={{ flex: 1, border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", padding: "8px 10px" }}>{ar ? "حذف الموقع" : "Delete place"}</button></div>}
           </div>
         </article>
       </section>
@@ -730,11 +747,12 @@ export default function Home() {
                 </select>
               </label>
               <label>
-                {ar ? "رابط الصورة" : "Photo URL"}
+                {ar ? "صورة المكان" : "Place photo"}
                 <input
-                  value={form.photo}
-                  onChange={(e) => updateForm("photo", e.target.value)}
-                  placeholder="https://..."
+                  required
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
                 />
               </label>
               <label className="full">
