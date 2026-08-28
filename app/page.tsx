@@ -154,6 +154,18 @@ export default function Home() {
       .catch(() => setAuthError("Authentication is unavailable."));
   }, []);
   useEffect(() => {
+    fetch("/api/places")
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((savedPlaces: Place[]) => {
+        if (!savedPlaces.length) return;
+        setAllPlaces(savedPlaces);
+        setSelected(savedPlaces[0]);
+      })
+      .catch(() => {
+        // Keep the bundled sample places visible if persistence is unavailable.
+      });
+  }, []);
+  useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
     const map = L.map(mapRef.current, {
       scrollWheelZoom: true,
