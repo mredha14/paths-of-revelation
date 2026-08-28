@@ -527,9 +527,7 @@ export default function Home() {
                 <img src={p.photo} alt="" />
                 <span>
                   <b>{text(p, "title")}</b>
-                  <small>
-                    {text(p, "type")} · {text(p, "era")}
-                  </small>
+                  <small>{text(p, "type")}</small>
                 </span>
                 <i>↗</i>
               </button>
@@ -596,7 +594,7 @@ export default function Home() {
                 {ar ? "أضف إلى المفضلة" : "Add to favorites"} +
               </button>
             </nav>
-            {account?.role === "admin" && <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button disabled={saving} onClick={() => { setEditForm({title:selected.title,titleEn:selected.titleEn,description:selected.description,descriptionEn:selected.descriptionEn,city:selected.city,category:selected.typeEn === "Mosque" ? "mosque" : selected.typeEn === "Revelation site" ? "revelation" : selected.typeEn === "Mountain / landmark" ? "mountain" : "historic_site"}); setEditPhotoFile(null); setEditOpen(true); }} style={{ flex: 1, border: "1px solid #315e4c", background: "transparent", color: "#315e4c", padding: "8px 10px" }}>{ar ? "تعديل الموقع" : "Edit place"}</button><button disabled={saving} onClick={deletePlace} style={{ flex: 1, border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", padding: "8px 10px" }}>{ar ? "حذف الموقع" : "Delete place"}</button></div>}
+            {account?.role === "admin" && <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button disabled={saving} onClick={() => { setEditForm({title:selected.title,titleEn:selected.titleEn,description:selected.description,descriptionEn:selected.descriptionEn,city:selected.city,category:selected.typeEn === "Mosque" ? "mosque" : selected.typeEn === "Revelation site" ? "revelation" : selected.typeEn === "Mountain / landmark" ? "mountain" : "historic_site"}); setEditPhotoFile(null); setEditOpen(true); }} style={{ flex: 1, border: "1px solid #315e4c", background: "transparent", color: "#315e4c", padding: "9px", fontSize: 12, fontWeight: 400 }}>{ar ? "تعديل الموقع" : "Edit place"}</button><button disabled={saving} onClick={deletePlace} style={{ flex: 1, border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", padding: "9px", fontSize: 12, fontWeight: 400 }}>{ar ? "حذف الموقع" : "Delete place"}</button></div>}
           </div>
         </article>
       </section>
