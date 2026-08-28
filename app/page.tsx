@@ -143,7 +143,6 @@ export default function Home() {
   const ar = language === "ar";
   const visible =
     city === "all" ? allPlaces : allPlaces.filter((p) => p.city === city);
-  const favoritePlaceCount = new Set(favoriteLists.flatMap((list) => list.placeIds)).size;
   const openFavoriteList = favoriteLists.find((list) => list.id === openFavoriteListId) ?? null;
   useEffect(() => {
     fetch("/api/auth/config")
@@ -240,6 +239,23 @@ export default function Home() {
       setFavoriteLists((current) => current.map((list) => list.id === listId ? { ...list, placeIds: list.placeIds.filter((id) => id !== placeId) } : list));
     } catch (error) {
       setFavoriteError(error instanceof Error ? error.message : "Could not remove this place from the list.");
+    } finally {
+      setFavoriteBusy(false);
+    }
+  };
+  const deleteFavoriteList = async (listId: number) => {
+    const token = await tokenFor();
+    if (!token) return;
+    setFavoriteBusy(true);
+    setFavoriteError("");
+    try {
+      const response = await fetch("/api/favorite-lists", { method: "DELETE", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ id: listId }) });
+      const data = await response.json().catch(() => ({} as { error?: string }));
+      if (!response.ok) throw new Error(data.error || "Could not delete this list.");
+      setFavoriteLists((current) => current.filter((list) => list.id !== listId));
+      setOpenFavoriteListId(null);
+    } catch (error) {
+      setFavoriteError(error instanceof Error ? error.message : "Could not delete this list.");
     } finally {
       setFavoriteBusy(false);
     }
@@ -392,7 +408,7 @@ export default function Home() {
         </a>
         <nav>
           <button onClick={() => { setFavoriteError(""); setOpenFavoriteListId(null); account ? setListsOpen(true) : setAuthOpen(true); }}>
-            {ar ? "قوائمي المفضلة" : "My favorite lists"} <em>{favoritePlaceCount}</em>
+            {ar ? "قوائمي المفضلة" : "My favorite lists"} <em>{favoriteLists.length}</em>
           </button>
           {account?.role === "admin" && (
             <button onClick={() => setAdmin(true)}>
@@ -595,6 +611,7 @@ export default function Home() {
               <p>{ar ? "قائمة مفضلة" : "FAVORITE LIST"}</p>
               <h2>{openFavoriteList.title}</h2>
               <small>{openFavoriteList.placeIds.length ? (ar ? "اختر مكاناً لعرضه على الخريطة." : "Choose a place to view it on the map.") : (ar ? "هذه القائمة فارغة حتى الآن." : "This list is empty for now.")}</small>
+              <button type="button" disabled={favoriteBusy} onClick={() => deleteFavoriteList(openFavoriteList.id)} style={{ marginTop: 14, padding: "6px 9px", border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", fontSize: 12 }}>{ar ? "حذف القائمة" : "Delete list"}</button>
               <div className="favorite-place-items">
                 {allPlaces.filter((place) => openFavoriteList.placeIds.includes(place.id)).map((place) => <div key={place.id}><button onClick={() => { selectFromList(place); setListsOpen(false); setOpenFavoriteListId(null); }}><img src={place.photo} alt="" /><span><b>{text(place, "title")}</b><small>{place.city}</small></span><i>↗</i></button><button type="button" disabled={favoriteBusy} onClick={() => removePlaceFromFavoriteList(openFavoriteList.id, place.id)} style={{ display: "inline-block", marginTop: 6, padding: "5px 8px", border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", fontSize: 11 }}>{ar ? "إزالة من القائمة" : "Remove from list"}</button></div>)}
               </div>

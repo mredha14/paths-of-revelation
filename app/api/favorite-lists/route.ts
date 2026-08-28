@@ -37,3 +37,15 @@ export async function POST(request: Request) {
   const [list] = await current.db.insert(favoriteLists).values({ profileId: current.profile.id, title, createdAt: now, updatedAt: now }).returning();
   return Response.json({ ...list, placeIds: [] });
 }
+
+export async function DELETE(request: Request) {
+  const current = await profileFor(request);
+  if (!current) return Response.json({ error: 'Sign in required.' }, { status: 401 });
+  const body = await request.json() as { id?: number };
+  if (!Number.isInteger(body.id)) return Response.json({ error: 'Invalid favorite list.' }, { status: 400 });
+  const list = await current.db.select().from(favoriteLists)
+    .where(eq(favoriteLists.id, body.id)).get();
+  if (!list || list.profileId !== current.profile.id) return Response.json({ error: 'Favorite list not found.' }, { status: 404 });
+  await current.db.delete(favoriteLists).where(eq(favoriteLists.id, list.id));
+  return Response.json({ ok: true });
+}
