@@ -228,6 +228,22 @@ export default function Home() {
       setFavoriteBusy(false);
     }
   };
+  const removePlaceFromFavoriteList = async (listId: number, placeId: number) => {
+    const token = await tokenFor();
+    if (!token) return;
+    setFavoriteBusy(true);
+    setFavoriteError("");
+    try {
+      const response = await fetch(`/api/favorite-lists/${listId}/places`, { method: "DELETE", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ placeId }) });
+      const data = await response.json().catch(() => ({} as { error?: string }));
+      if (!response.ok) throw new Error(data.error || "Could not remove this place from the list.");
+      setFavoriteLists((current) => current.map((list) => list.id === listId ? { ...list, placeIds: list.placeIds.filter((id) => id !== placeId) } : list));
+    } catch (error) {
+      setFavoriteError(error instanceof Error ? error.message : "Could not remove this place from the list.");
+    } finally {
+      setFavoriteBusy(false);
+    }
+  };
   const createFavoriteList = async (event: React.FormEvent) => {
     event.preventDefault();
     const token = await tokenFor();
@@ -580,8 +596,9 @@ export default function Home() {
               <h2>{openFavoriteList.title}</h2>
               <small>{openFavoriteList.placeIds.length ? (ar ? "اختر مكاناً لعرضه على الخريطة." : "Choose a place to view it on the map.") : (ar ? "هذه القائمة فارغة حتى الآن." : "This list is empty for now.")}</small>
               <div className="favorite-place-items">
-                {allPlaces.filter((place) => openFavoriteList.placeIds.includes(place.id)).map((place) => <button key={place.id} onClick={() => { selectFromList(place); setListsOpen(false); setOpenFavoriteListId(null); }}><img src={place.photo} alt="" /><span><b>{text(place, "title")}</b><small>{place.city}</small></span><i>↗</i></button>)}
+                {allPlaces.filter((place) => openFavoriteList.placeIds.includes(place.id)).map((place) => <div key={place.id}><button onClick={() => { selectFromList(place); setListsOpen(false); setOpenFavoriteListId(null); }}><img src={place.photo} alt="" /><span><b>{text(place, "title")}</b><small>{place.city}</small></span><i>↗</i></button><button type="button" disabled={favoriteBusy} onClick={() => removePlaceFromFavoriteList(openFavoriteList.id, place.id)} style={{ display: "inline-block", marginTop: 6, padding: "5px 8px", border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", fontSize: 11 }}>{ar ? "إزالة من القائمة" : "Remove from list"}</button></div>)}
               </div>
+              {favoriteError && <p className="form-error">{favoriteError}</p>}
             </> : <>
               <p>{ar ? "قوائمي" : "MY LISTS"}</p>
               <h2>{ar ? "قوائم الأماكن المفضلة" : "Favorite place lists"}</h2>
