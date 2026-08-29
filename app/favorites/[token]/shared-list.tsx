@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
+import type * as Leaflet from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 type Place = { id:number; city:"Makkah"|"Madinah"; title:string; titleEn:string; type:string; typeEn:string; era:string; eraEn:string; description:string; descriptionEn:string; lat:number; lng:number; photo:string };
@@ -9,8 +9,10 @@ type SharedList = { title: string; places: Place[] };
 
 export default function SharedList({ shareToken }: { shareToken: string }) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<L.Map | null>(null);
-  const markers = useRef<L.LayerGroup | null>(null);
+  const mapInstance = useRef<Leaflet.Map | null>(null);
+  const markers = useRef<Leaflet.LayerGroup | null>(null);
+  const leaflet = useRef<typeof import("leaflet") | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   const [language, setLanguage] = useState<"ar" | "en">("ar");
   const [shared, setShared] = useState<SharedList | null>(null);
   const [selected, setSelected] = useState<Place | null>(null);
@@ -19,8 +21,8 @@ export default function SharedList({ shareToken }: { shareToken: string }) {
   const text = (place: Place, key: "title" | "type" | "era" | "description") => ar ? place[key] : (place[(key + "En") as keyof Place] as string);
 
   useEffect(() => { fetch(`/api/shared-favorite-lists/${encodeURIComponent(shareToken)}`).then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.error); setShared(data); setSelected(data.places[0] ?? null); }).catch((cause) => setError(cause instanceof Error ? cause.message : "This favorite list is unavailable.")); }, [shareToken]);
-  useEffect(() => { if (!mapRef.current || mapInstance.current) return; const map = L.map(mapRef.current, { scrollWheelZoom: true, zoomControl: true }).setView([23, 39.75], 6); mapInstance.current = map; L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(map); return () => { map.remove(); mapInstance.current = null; }; }, []);
-  useEffect(() => { const map = mapInstance.current; if (!map || !shared) return; markers.current?.remove(); const layer = L.layerGroup().addTo(map); markers.current = layer; shared.places.forEach((place) => { const marker = L.circleMarker([place.lat, place.lng], { radius: place.id === selected?.id ? 12 : 9, color: "#fff", weight: 3, fillColor: place.id === selected?.id ? "#ba8132" : "#315e4c", fillOpacity: 1 }).addTo(layer); marker.bindTooltip(place.title, { direction: "top", offset: [0, -8], opacity: .94 }); marker.on("click", () => { setSelected(place); map.flyTo([place.lat, place.lng], Math.max(map.getZoom(), 14), { duration: .65 }); }); }); }, [shared, selected]);
+  useEffect(() => { let active = true; void import("leaflet").then((module) => { if (!active || !mapRef.current || mapInstance.current) return; const L = module.default; leaflet.current = module; const map = L.map(mapRef.current, { scrollWheelZoom: true, zoomControl: true }).setView([23, 39.75], 6); mapInstance.current = map; L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(map); setMapReady(true); }); return () => { active = false; mapInstance.current?.remove(); mapInstance.current = null; markers.current = null; leaflet.current = null; setMapReady(false); }; }, []);
+  useEffect(() => { const map = mapInstance.current, L = leaflet.current?.default; if (!map || !L || !shared) return; markers.current?.remove(); const layer = L.layerGroup().addTo(map); markers.current = layer; shared.places.forEach((place) => { const marker = L.circleMarker([place.lat, place.lng], { radius: place.id === selected?.id ? 12 : 9, color: "#fff", weight: 3, fillColor: place.id === selected?.id ? "#ba8132" : "#315e4c", fillOpacity: 1 }).addTo(layer); marker.bindTooltip(place.title, { direction: "top", offset: [0, -8], opacity: .94 }); marker.on("click", () => { setSelected(place); map.flyTo([place.lat, place.lng], Math.max(map.getZoom(), 14), { duration: .65 }); }); }); }, [mapReady, shared, selected]);
   const choose = (place: Place) => { setSelected(place); mapInstance.current?.flyTo([place.lat, place.lng], Math.max(mapInstance.current.getZoom(), 14), { duration: .65 }); };
 
   return <main className="site" dir={ar ? "rtl" : "ltr"}>
