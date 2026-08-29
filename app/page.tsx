@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
+import type * as Leaflet from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
@@ -104,8 +104,10 @@ const places: Place[] = [
 export default function Home() {
   const mapRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<L.Map | null>(null);
-  const markers = useRef<L.LayerGroup | null>(null);
+  const mapInstance = useRef<Leaflet.Map | null>(null);
+  const markers = useRef<Leaflet.LayerGroup | null>(null);
+  const leaflet = useRef<typeof import("leaflet") | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const [account, setAccount] = useState<{
     username: string;
@@ -206,24 +208,35 @@ export default function Home() {
       });
   }, []);
   useEffect(() => {
-    if (!mapRef.current || mapInstance.current) return;
-    const map = L.map(mapRef.current, {
-      scrollWheelZoom: true,
-      zoomControl: true,
-    }).setView([23, 39.75], 6);
-    mapInstance.current = map;
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors",
-      maxZoom: 19,
-    }).addTo(map);
+    let active = true;
+    void import("leaflet").then((module) => {
+      if (!active || !mapRef.current || mapInstance.current) return;
+      const L = module.default;
+      leaflet.current = module;
+      const map = L.map(mapRef.current, {
+        scrollWheelZoom: true,
+        zoomControl: true,
+      }).setView([23, 39.75], 6);
+      mapInstance.current = map;
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors",
+        maxZoom: 19,
+      }).addTo(map);
+      setMapReady(true);
+    });
     return () => {
-      map.remove();
+      active = false;
+      mapInstance.current?.remove();
       mapInstance.current = null;
+      markers.current = null;
+      leaflet.current = null;
+      setMapReady(false);
     };
   }, []);
   useEffect(() => {
     const map = mapInstance.current;
-    if (!map) return;
+    const L = leaflet.current?.default;
+    if (!map || !L) return;
     markers.current?.remove();
     const layer = L.layerGroup().addTo(map);
     markers.current = layer;
@@ -248,7 +261,7 @@ export default function Home() {
         });
       });
     });
-  }, [visible, selected]);
+  }, [mapReady, visible, selected]);
   useEffect(() => { setSelectedCategories((current) => current.filter((category) => categoryOptions.includes(category))); }, [categoryOptions.join("|")]);
   const text = (p: Place, k: "title" | "type" | "era" | "description") =>
     ar ? p[k] : (p[(k + "En") as keyof Place] as string);
