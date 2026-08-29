@@ -627,16 +627,7 @@ export default function Home() {
             <nav>
               <a
                 target="_blank"
-                href={
-                  "https://www.openstreetmap.org/?mlat=" +
-                  selected.lat +
-                  "&mlon=" +
-                  selected.lng +
-                  "#map=15/" +
-                  selected.lat +
-                  "/" +
-                  selected.lng
-                }
+                href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`}
               >
                 {ar ? "الاتجاهات" : "Directions"} ↗
               </a>
