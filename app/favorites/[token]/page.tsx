@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { useParams } from "next/navigation";
 
 type Place = { id:number; city:"Makkah"|"Madinah"; title:string; titleEn:string; type:string; typeEn:string; era:string; eraEn:string; description:string; descriptionEn:string; lat:number; lng:number; photo:string; source:string };
 type SharedList = { title: string; places: Place[] };
@@ -16,11 +15,12 @@ export default function SharedFavoriteListPage() {
   const [shared, setShared] = useState<SharedList | null>(null);
   const [selected, setSelected] = useState<Place | null>(null);
   const [error, setError] = useState("");
-  const routeParams = useParams<{ token: string }>();
+  const [shareToken, setShareToken] = useState("");
   const ar = language === "ar";
   const text = (place: Place, key: "title" | "type" | "era" | "description") => ar ? place[key] : (place[(key + "En") as keyof Place] as string);
 
-  useEffect(() => { if (!routeParams.token) return; fetch(`/api/shared-favorite-lists/${encodeURIComponent(routeParams.token)}`).then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.error); setShared(data); setSelected(data.places[0] ?? null); }).catch((cause) => setError(cause instanceof Error ? cause.message : "This favorite list is unavailable.")); }, [routeParams.token]);
+  useEffect(() => { setShareToken(window.location.pathname.split("/").filter(Boolean).at(-1) ?? ""); }, []);
+  useEffect(() => { if (!shareToken) return; fetch(`/api/shared-favorite-lists/${encodeURIComponent(shareToken)}`).then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.error); setShared(data); setSelected(data.places[0] ?? null); }).catch((cause) => setError(cause instanceof Error ? cause.message : "This favorite list is unavailable.")); }, [shareToken]);
   useEffect(() => { if (!mapRef.current || mapInstance.current) return; const map = L.map(mapRef.current, { scrollWheelZoom: true, zoomControl: true }).setView([23, 39.75], 6); mapInstance.current = map; L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(map); return () => { map.remove(); mapInstance.current = null; }; }, []);
   useEffect(() => { const map = mapInstance.current; if (!map || !shared) return; markers.current?.remove(); const layer = L.layerGroup().addTo(map); markers.current = layer; shared.places.forEach((place) => { const marker = L.circleMarker([place.lat, place.lng], { radius: place.id === selected?.id ? 12 : 9, color: "#fff", weight: 3, fillColor: place.id === selected?.id ? "#ba8132" : "#315e4c", fillOpacity: 1 }).addTo(layer); marker.bindTooltip(place.title, { direction: "top", offset: [0, -8], opacity: .94 }); marker.on("click", () => { setSelected(place); map.flyTo([place.lat, place.lng], Math.max(map.getZoom(), 14), { duration: .65 }); }); }); }, [shared, selected]);
   const choose = (place: Place) => { setSelected(place); mapInstance.current?.flyTo([place.lat, place.lng], Math.max(mapInstance.current.getZoom(), 14), { duration: .65 }); };
