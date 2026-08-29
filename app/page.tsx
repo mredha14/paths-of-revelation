@@ -504,7 +504,7 @@ export default function Home() {
     <main dir={ar ? "rtl" : "ltr"} className="site">
       <header>
         <a className="brand" href="#map">
-          <span>ر</span>
+          <span><img src="/paths-of-revelation-logo.png" alt="" /></span>
           <b>
             {ar ? "دروب الوحي" : "Paths of Revelation"}
             <small>
