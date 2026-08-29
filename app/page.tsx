@@ -514,7 +514,7 @@ export default function Home() {
           </b>
         </a>
         <button className="mobile-menu-toggle" type="button" aria-label={ar ? "فتح القائمة" : "Open menu"} aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen((open) => !open)}>{mobileMenuOpen ? "×" : "☰"}</button>
-        <nav className={mobileMenuOpen ? "mobile-open" : ""}>
+        <nav className={mobileMenuOpen ? "mobile-open" : ""} onClick={() => setMobileMenuOpen(false)}>
           <button onClick={() => { setFavoriteError(""); setOpenFavoriteListId(null); account ? setListsOpen(true) : setAuthOpen(true); }}>
             {ar ? "قوائمي المفضلة" : "My favorite lists"} <em>{favoriteLists.length}</em>
           </button>
