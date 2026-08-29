@@ -164,10 +164,29 @@ export default function Home() {
   const openFavoriteList = favoriteLists.find((list) => list.id === openFavoriteListId) ?? null;
   useEffect(() => {
     fetch("/api/auth/config")
-      .then((response) => response.json())
+      .then((response) => response.ok ? response.json() : Promise.reject())
       .then((config) => setSupabase(createClient(config.url, config.anonKey)))
       .catch(() => setAuthError("Authentication is unavailable."));
   }, []);
+  useEffect(() => {
+    if (!supabase) return;
+    let active = true;
+    const restoreSession = async (accessToken?: string) => {
+      if (!accessToken) { if (active) { setAccount(null); setFavoriteLists([]); } return; }
+      try {
+        const response = await fetch("/api/me", { headers: { Authorization: "Bearer " + accessToken } });
+        const profile = await response.json();
+        if (!response.ok) throw new Error(profile.error);
+        if (!active) return;
+        setAccount(profile);
+        await loadFavoriteLists(accessToken);
+        if (profile.role === "admin") await loadTaxonomy(accessToken);
+      } catch { if (active) setAccount(null); }
+    };
+    supabase.auth.getSession().then(({ data }) => { void restoreSession(data.session?.access_token); });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => { void restoreSession(session?.access_token); });
+    return () => { active = false; subscription.unsubscribe(); };
+  }, [supabase]);
   useEffect(() => {
     const closeFilter = (event: MouseEvent) => { if (filterRef.current && !filterRef.current.contains(event.target as Node)) setFiltersOpen(false); };
     document.addEventListener("mousedown", closeFilter);
