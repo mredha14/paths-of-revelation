@@ -542,7 +542,7 @@ export default function Home() {
       </header>
       <section className="hero">
         <div>
-          <p>{ar ? "مكة المكرمة · المدينة المنورة" : "MAKKAH · MADINAH"}</p>
+          <p>{ar ? "مكة المكرمة · المدينة المنورة" : "MAKKAH . MADINAH . KARBALA . NAJAF . MASHHAD ... AND MORE"}</p>
           <h1>
             {ar ? (
               <>
@@ -550,7 +550,7 @@ export default function Home() {
               </>
             ) : (
               <>
-                Discover places that tell the <i>Seerah</i>
+                Discover places that tell the <i>Seerah of the Prophet and Ahlulbayt</i>
               </>
             )}
           </h1>
@@ -560,9 +560,6 @@ export default function Home() {
               : "A living map, sourced stories, and visit plans to share."}
           </small>
         </div>
-        <aside>
-          ◌ {ar ? "تصفّح بأدب ومعرفة" : "Explore with care and knowledge"}
-        </aside>
       </section>
       <section id="map" className="workspace">
         <aside className="explorer">
