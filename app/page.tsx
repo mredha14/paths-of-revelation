@@ -117,9 +117,7 @@ export default function Home() {
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [language, setLanguage] = useState<"ar" | "en">("ar");
-  const [selectedCities, setSelectedCities] = useState<string[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [city, setCity] = useState<"all" | Place["city"]>("all");
   const [allPlaces, setAllPlaces] = useState<Place[]>(places);
   const [selected, setSelected] = useState(places[0]);
   const [favoriteLists, setFavoriteLists] = useState<FavoriteList[]>([]);
@@ -154,12 +152,8 @@ export default function Home() {
     descriptionEn: "",
   });
   const ar = language === "ar";
-  const visible = allPlaces.filter((place) =>
-    (!selectedCities.length || selectedCities.includes(place.city)) &&
-    (!selectedCategories.length || selectedCategories.includes(place.typeEn)),
-  );
-  const cityOptions = Array.from(new Set(allPlaces.map((place) => place.city)));
-  const categoryOptions = Array.from(new Set(allPlaces.map((place) => place.typeEn)));
+  const visible =
+    city === "all" ? allPlaces : allPlaces.filter((p) => p.city === city);
   const openFavoriteList = favoriteLists.find((list) => list.id === openFavoriteListId) ?? null;
   useEffect(() => {
     fetch("/api/auth/config")
@@ -201,7 +195,7 @@ export default function Home() {
     markers.current?.remove();
     const layer = L.layerGroup().addTo(map);
     markers.current = layer;
-    visible.forEach((place) => {
+    allPlaces.forEach((place) => {
       const isSelected = place.id === selected.id;
       const marker = L.circleMarker([place.lat, place.lng], {
         radius: isSelected ? 12 : 9,
@@ -222,7 +216,7 @@ export default function Home() {
         });
       });
     });
-  }, [visible, selected]);
+  }, [allPlaces, selected]);
   const text = (p: Place, k: "title" | "type" | "era" | "description") =>
     ar ? p[k] : (p[(k + "En") as keyof Place] as string);
   const tokenFor = async () => (await supabase?.auth.getSession())?.data.session?.access_token;
@@ -538,8 +532,26 @@ export default function Home() {
             </div>
             <span>{visible.length}</span>
           </div>
-          <div className="filters"><button className={(selectedCities.length || selectedCategories.length) ? "active" : ""} onClick={() => setFiltersOpen((open) => !open)}>{ar ? "تصفية" : "Filter"}{(selectedCities.length + selectedCategories.length) ? ` · ${selectedCities.length + selectedCategories.length}` : ""}</button>{(selectedCities.length || selectedCategories.length) > 0 && <button onClick={() => { setSelectedCities([]); setSelectedCategories([]); }}>{ar ? "مسح" : "Clear"}</button>}</div>
-          {filtersOpen && <div className="filter-panel"><section><b>{ar ? "المدن" : "Cities"}</b>{cityOptions.map((option) => <button key={option} className={selectedCities.includes(option) ? "checked" : ""} onClick={() => setSelectedCities(current => current.includes(option) ? current.filter(item => item !== option) : [...current, option])}>{selectedCities.includes(option) ? "✓ " : ""}{ar ? option === "Makkah" ? "مكة المكرمة" : option === "Madinah" ? "المدينة المنورة" : option : option}</button>)}</section><section><b>{ar ? "الفئات" : "Categories"}</b>{categoryOptions.map((option) => <button key={option} className={selectedCategories.includes(option) ? "checked" : ""} onClick={() => setSelectedCategories(current => current.includes(option) ? current.filter(item => item !== option) : [...current, option])}>{selectedCategories.includes(option) ? "✓ " : ""}{ar ? allPlaces.find(place => place.typeEn === option)?.type : option}</button>)}</section></div>}
+          <div className="filters">
+            <button
+              className={city === "all" ? "active" : ""}
+              onClick={() => setCity("all")}
+            >
+              {ar ? "الكل" : "All"}
+            </button>
+            <button
+              className={city === "Makkah" ? "active" : ""}
+              onClick={() => setCity("Makkah")}
+            >
+              {ar ? "مكة" : "Makkah"}
+            </button>
+            <button
+              className={city === "Madinah" ? "active" : ""}
+              onClick={() => setCity("Madinah")}
+            >
+              {ar ? "المدينة" : "Madinah"}
+            </button>
+          </div>
           <div className="place-list">
             {visible.map((p) => (
               <button
