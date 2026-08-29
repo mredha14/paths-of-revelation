@@ -116,6 +116,7 @@ export default function Home() {
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [language, setLanguage] = useState<"ar" | "en">("ar");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -512,7 +513,8 @@ export default function Home() {
             </small>
           </b>
         </a>
-        <nav>
+        <button className="mobile-menu-toggle" type="button" aria-label={ar ? "فتح القائمة" : "Open menu"} aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen((open) => !open)}>{mobileMenuOpen ? "×" : "☰"}</button>
+        <nav className={mobileMenuOpen ? "mobile-open" : ""}>
           <button onClick={() => { setFavoriteError(""); setOpenFavoriteListId(null); account ? setListsOpen(true) : setAuthOpen(true); }}>
             {ar ? "قوائمي المفضلة" : "My favorite lists"} <em>{favoriteLists.length}</em>
           </button>
