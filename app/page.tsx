@@ -276,6 +276,30 @@ export default function Home() {
       setFavoriteBusy(false);
     }
   };
+  const shareFavoriteList = async (useShareSheet: boolean) => {
+    if (!openFavoriteList) return;
+    const token = await tokenFor();
+    if (!token) return;
+    setFavoriteBusy(true);
+    setFavoriteError("");
+    try {
+      const response = await fetch(`/api/favorite-lists/${openFavoriteList.id}/share`, { method: "POST", headers: { Authorization: "Bearer " + token } });
+      const data = await response.json().catch(() => ({} as { error?: string; shareToken?: string }));
+      if (!response.ok || !data.shareToken) throw new Error(data.error || "Could not create a share link.");
+      const url = `${window.location.origin}/favorites/${data.shareToken}`;
+      if (useShareSheet && navigator.share) {
+        await navigator.share({ title: openFavoriteList.title, url });
+        setFavoriteError(ar ? "تمت مشاركة القائمة." : "List shared.");
+      } else {
+        await navigator.clipboard.writeText(url);
+        setFavoriteError(ar ? "تم نسخ رابط القائمة." : "List link copied.");
+      }
+    } catch (error) {
+      setFavoriteError(error instanceof Error ? error.message : "Could not share this list.");
+    } finally {
+      setFavoriteBusy(false);
+    }
+  };
   const createFavoriteList = async (event: React.FormEvent) => {
     event.preventDefault();
     const token = await tokenFor();
@@ -639,7 +663,7 @@ export default function Home() {
               <p>{ar ? "قائمة مفضلة" : "FAVORITE LIST"}</p>
               <h2>{openFavoriteList.title}</h2>
               <small>{openFavoriteList.placeIds.length ? (ar ? "اختر مكاناً لعرضه على الخريطة." : "Choose a place to view it on the map.") : (ar ? "هذه القائمة فارغة حتى الآن." : "This list is empty for now.")}</small>
-              <button type="button" disabled={favoriteBusy} onClick={() => deleteFavoriteList(openFavoriteList.id)} style={{ marginTop: 14, padding: "6px 9px", border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", fontSize: 12 }}>{ar ? "حذف القائمة" : "Delete list"}</button>
+              <div className="favorite-list-actions"><button type="button" disabled={favoriteBusy} onClick={() => shareFavoriteList(false)}>{ar ? "نسخ الرابط" : "Copy link"}</button>{typeof navigator !== "undefined" && "share" in navigator && <button type="button" disabled={favoriteBusy} onClick={() => shareFavoriteList(true)}>{ar ? "مشاركة" : "Share"}</button>}<button type="button" disabled={favoriteBusy} onClick={() => deleteFavoriteList(openFavoriteList.id)} className="delete-list-button">{ar ? "حذف القائمة" : "Delete list"}</button></div>
               <div className="favorite-place-items">
                 {allPlaces.filter((place) => openFavoriteList.placeIds.includes(place.id)).map((place) => <div key={place.id}><button onClick={() => { selectFromList(place); setListsOpen(false); setOpenFavoriteListId(null); }}><img src={place.photo} alt="" /><span><b>{text(place, "title")}</b><small>{place.city}</small></span><i>↗</i></button><button type="button" disabled={favoriteBusy} onClick={() => removePlaceFromFavoriteList(openFavoriteList.id, place.id)} style={{ display: "inline-block", marginTop: 6, padding: "5px 8px", border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", fontSize: 11 }}>{ar ? "إزالة من القائمة" : "Remove from list"}</button></div>)}
               </div>

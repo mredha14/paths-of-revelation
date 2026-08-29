@@ -22,6 +22,13 @@
       "when": 1787950000000,
       "tag": "0002_seed_default_places",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1787993526578,
+      "tag": "0003_funny_iron_lad",
+      "breakpoints": true
     }
   ]
 }

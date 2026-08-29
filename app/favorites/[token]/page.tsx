@@ -1,0 +1,35 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+type Place = { id:number; city:"Makkah"|"Madinah"; title:string; titleEn:string; type:string; typeEn:string; era:string; eraEn:string; description:string; descriptionEn:string; lat:number; lng:number; photo:string; source:string };
+type SharedList = { title: string; places: Place[] };
+
+export default function SharedFavoriteListPage({ params }: { params: Promise<{ token: string }> }) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<L.Map | null>(null);
+  const markers = useRef<L.LayerGroup | null>(null);
+  const [language, setLanguage] = useState<"ar" | "en">("ar");
+  const [shared, setShared] = useState<SharedList | null>(null);
+  const [selected, setSelected] = useState<Place | null>(null);
+  const [error, setError] = useState("");
+  const ar = language === "ar";
+  const text = (place: Place, key: "title" | "type" | "era" | "description") => ar ? place[key] : (place[(key + "En") as keyof Place] as string);
+
+  useEffect(() => { params.then(({ token }) => fetch(`/api/shared-favorite-lists/${encodeURIComponent(token)}`)).then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.error); setShared(data); setSelected(data.places[0] ?? null); }).catch((cause) => setError(cause instanceof Error ? cause.message : "This favorite list is unavailable.")); }, [params]);
+  useEffect(() => { if (!mapRef.current || mapInstance.current) return; const map = L.map(mapRef.current, { scrollWheelZoom: true, zoomControl: true }).setView([23, 39.75], 6); mapInstance.current = map; L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors", maxZoom: 19 }).addTo(map); return () => { map.remove(); mapInstance.current = null; }; }, []);
+  useEffect(() => { const map = mapInstance.current; if (!map || !shared) return; markers.current?.remove(); const layer = L.layerGroup().addTo(map); markers.current = layer; shared.places.forEach((place) => { const marker = L.circleMarker([place.lat, place.lng], { radius: place.id === selected?.id ? 12 : 9, color: "#fff", weight: 3, fillColor: place.id === selected?.id ? "#ba8132" : "#315e4c", fillOpacity: 1 }).addTo(layer); marker.bindTooltip(place.title, { direction: "top", offset: [0, -8], opacity: .94 }); marker.on("click", () => { setSelected(place); map.flyTo([place.lat, place.lng], Math.max(map.getZoom(), 14), { duration: .65 }); }); }); }, [shared, selected]);
+  const choose = (place: Place) => { setSelected(place); mapInstance.current?.flyTo([place.lat, place.lng], Math.max(mapInstance.current.getZoom(), 14), { duration: .65 }); };
+
+  return <main className="site" dir={ar ? "rtl" : "ltr"}>
+    <header><a className="brand" href="/"><span>د</span><b>{ar ? "دروب الوحي" : "Paths of Revelation"}<small>{ar ? "أماكن · قصص · سياقات" : "Places · stories · contexts"}</small></b></a><nav><button onClick={() => setLanguage(ar ? "en" : "ar")}>{ar ? "EN" : "ع"}</button></nav></header>
+    <section className="shared-list-title"><p>{ar ? "قائمة مفضلة مشتركة" : "SHARED FAVORITE LIST"}</p><h1>{shared?.title ?? (ar ? "جارٍ تحميل القائمة…" : "Loading list…")}</h1></section>
+    {error ? <section className="shared-empty"><h1>{ar ? "القائمة غير متاحة" : "List unavailable"}</h1><p>{error}</p><a href="/">{ar ? "العودة إلى الخريطة" : "Back to the map"}</a></section> : <section className="workspace">
+      <aside className="explorer"><div className="explorer-heading"><h2>{ar ? "الأماكن" : "Places"}</h2><span>{shared?.places.length ?? 0}</span></div><p className="shared-list-subtitle">{ar ? "أماكن هذه القائمة" : "Places in this list"}</p><div className="place-list">{shared?.places.map((place) => <button key={place.id} className={selected?.id === place.id ? "selected" : ""} onClick={() => choose(place)}><img src={place.photo} alt=""/><span><b>{text(place, "title")}</b><small>{text(place, "type")}</small></span><i>‹</i></button>)}{shared && !shared.places.length && <small>{ar ? "لا توجد أماكن في هذه القائمة بعد." : "This list does not contain any places yet."}</small>}</div><footer>{ar ? "دروب الوحي — قائمة أماكن مشتركة" : "Paths of Revelation — Shared place list"}</footer></aside>
+      <section className="map-area"><div ref={mapRef} className="map" /></section>
+      <article className="card">{selected ? <><img src={selected.photo} alt={text(selected, "title")}/><div><p>{selected.city === "Makkah" ? (ar ? "مكة المكرمة" : "MAKKAH") : (ar ? "المدينة المنورة" : "MADINAH")} · {text(selected, "type")}</p><section><h2>{text(selected, "title")}</h2></section><p className="description">{text(selected, "description")}</p><aside><span>{ar ? "الفئة" : "CATEGORY"}<b>{text(selected, "type")}</b></span></aside><nav><a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`}>{ar ? "الاتجاهات" : "Directions"}</a></nav></div></> : <div className="shared-card-empty">{ar ? "اختر مكاناً من القائمة." : "Choose a place from the list."}</div>}</article>
+    </section>}
+  </main>;
+}

@@ -54,9 +54,14 @@ export const favoriteLists = sqliteTable('favorite_lists', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   profileId: integer('profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
+  isPublic: integer('is_public', { mode: 'boolean' }).notNull().default(false),
+  shareToken: text('share_token'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
-}, (table) => [index('idx_favorite_lists_profile').on(table.profileId)]);
+}, (table) => [
+  uniqueIndex('idx_favorite_lists_share_token').on(table.shareToken),
+  index('idx_favorite_lists_profile').on(table.profileId),
+]);
 
 export const favoriteListPlaces = sqliteTable('favorite_list_places', {
   id: integer('id').primaryKey({ autoIncrement: true }),
