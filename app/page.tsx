@@ -123,6 +123,7 @@ export default function Home() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [allPlaces, setAllPlaces] = useState<Place[]>(places);
+  const [placesReady, setPlacesReady] = useState(false);
   const [selected, setSelected] = useState(places[0]);
   const [favoriteLists, setFavoriteLists] = useState<FavoriteList[]>([]);
   const [listsOpen, setListsOpen] = useState(false);
@@ -160,7 +161,7 @@ export default function Home() {
   const cityOptions = Array.from(new Set(allPlaces.map((place) => place.city)));
   const cityMatches = selectedCities.length ? allPlaces.filter((place) => selectedCities.includes(place.city)) : allPlaces;
   const categoryOptions = Array.from(new Set(cityMatches.map((place) => place.typeEn)));
-  const visible = cityMatches.filter((place) => !selectedCategories.length || selectedCategories.includes(place.typeEn));
+  const visible = placesReady ? cityMatches.filter((place) => !selectedCategories.length || selectedCategories.includes(place.typeEn)) : [];
   const openFavoriteList = favoriteLists.find((list) => list.id === openFavoriteListId) ?? null;
   useEffect(() => {
     fetch("/api/auth/config")
@@ -196,12 +197,12 @@ export default function Home() {
     fetch("/api/places")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((savedPlaces: Place[]) => {
-        if (!savedPlaces.length) return;
-        setAllPlaces(savedPlaces);
-        setSelected(savedPlaces[0]);
+        if (savedPlaces.length) { setAllPlaces(savedPlaces); setSelected(savedPlaces[0]); }
+        setPlacesReady(true);
       })
       .catch(() => {
         // Keep the bundled sample places visible if persistence is unavailable.
+        setPlacesReady(true);
       });
   }, []);
   useEffect(() => {
@@ -599,7 +600,7 @@ export default function Home() {
           />
         </div>
         <article className="card">
-          <img src={selected.photo} alt={text(selected, "title")} />
+          {!placesReady ? <div className="place-loading">{ar ? "جارٍ تحميل الأماكن…" : "Loading places…"}</div> : <><img src={selected.photo} alt={text(selected, "title")} />
           <div>
             <p>
               {selected.city === "Makkah"
@@ -643,7 +644,7 @@ export default function Home() {
               </button>
             </nav>
                 {account?.role === "admin" && <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button disabled={saving} onClick={() => { setEditForm({title:selected.title,titleEn:selected.titleEn,description:selected.description,descriptionEn:selected.descriptionEn,city:selected.city.toLowerCase(),category:selected.typeEn === "Mosque" ? "mosque" : selected.typeEn === "Revelation site" ? "revelation" : selected.typeEn === "Mountain / landmark" ? "mountain" : "historic_site",lat:String(selected.lat),lng:String(selected.lng)}); setEditPhotoFile(null); setEditOpen(true); }} style={{ flex: 1, border: "1px solid #315e4c", background: "transparent", color: "#315e4c", padding: "9px", fontSize: 12, fontWeight: 400 }}>{ar ? "تعديل الموقع" : "Edit place"}</button><button disabled={saving} onClick={deletePlace} style={{ flex: 1, border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", padding: "9px", fontSize: 12, fontWeight: 400 }}>{ar ? "حذف الموقع" : "Delete place"}</button></div>}
-          </div>
+          </div></>}
         </article>
       </section>
       <section className="principles">
