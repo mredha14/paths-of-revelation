@@ -103,6 +103,7 @@ const places: Place[] = [
 ];
 export default function Home() {
   const mapRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
   const markers = useRef<L.LayerGroup | null>(null);
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
@@ -165,6 +166,11 @@ export default function Home() {
       .then((response) => response.json())
       .then((config) => setSupabase(createClient(config.url, config.anonKey)))
       .catch(() => setAuthError("Authentication is unavailable."));
+  }, []);
+  useEffect(() => {
+    const closeFilter = (event: MouseEvent) => { if (filterRef.current && !filterRef.current.contains(event.target as Node)) setFiltersOpen(false); };
+    document.addEventListener("mousedown", closeFilter);
+    return () => document.removeEventListener("mousedown", closeFilter);
   }, []);
   useEffect(() => {
     fetch("/api/places")
@@ -538,7 +544,7 @@ export default function Home() {
             </div>
             <span>{visible.length}</span>
           </div>
-          <div className="filter-wrap"><div className="filters"><button className={(selectedCities.length || selectedCategories.length) ? "active" : ""} onClick={() => setFiltersOpen((open) => !open)}>{ar ? "تصفية" : "Filter"}{(selectedCities.length + selectedCategories.length) ? ` · ${selectedCities.length + selectedCategories.length}` : ""}</button>{(selectedCities.length || selectedCategories.length) > 0 && <button onClick={() => { setSelectedCities([]); setSelectedCategories([]); }}>{ar ? "مسح" : "Clear"}</button>}</div>{filtersOpen && <div className="filter-panel"><section><b>{ar ? "المدن" : "Cities"}</b>{cityOptions.map((option) => <button key={option} className={selectedCities.includes(option) ? "checked" : ""} onClick={() => setSelectedCities((current) => current.includes(option) ? current.filter((item) => item !== option) : [...current, option])}>{selectedCities.includes(option) ? "✓ " : ""}{ar ? allPlaces.find((place) => place.city === option)?.cityAr ?? option : option}</button>)}</section><section><b>{ar ? "الفئات" : "Categories"}</b>{categoryOptions.map((option) => <button key={option} className={selectedCategories.includes(option) ? "checked" : ""} onClick={() => setSelectedCategories((current) => current.includes(option) ? current.filter((item) => item !== option) : [...current, option])}>{selectedCategories.includes(option) ? "✓ " : ""}{ar ? allPlaces.find((place) => place.typeEn === option)?.type : option}</button>)}{!categoryOptions.length && <small>{ar ? "لا توجد فئات مطابقة" : "No matching categories"}</small>}</section></div>}</div>
+          <div className="filter-wrap" ref={filterRef}><div className="filters"><button className={(selectedCities.length || selectedCategories.length) ? "active" : ""} onClick={() => setFiltersOpen((open) => !open)}>{ar ? "تصفية" : "Filter"}{(selectedCities.length + selectedCategories.length) ? ` · ${selectedCities.length + selectedCategories.length}` : ""}</button>{(selectedCities.length || selectedCategories.length) > 0 && <button onClick={() => { setSelectedCities([]); setSelectedCategories([]); }}>{ar ? "مسح" : "Clear"}</button>}</div>{filtersOpen && <div className="filter-panel"><section><b>{ar ? "المدن" : "Cities"}</b>{cityOptions.map((option) => <button key={option} className={selectedCities.includes(option) ? "checked" : ""} onClick={() => setSelectedCities((current) => current.includes(option) ? current.filter((item) => item !== option) : [...current, option])}>{selectedCities.includes(option) ? "✓ " : ""}{ar ? allPlaces.find((place) => place.city === option)?.cityAr ?? option : option}</button>)}</section><section><b>{ar ? "الفئات" : "Categories"}</b>{categoryOptions.map((option) => <button key={option} className={selectedCategories.includes(option) ? "checked" : ""} onClick={() => setSelectedCategories((current) => current.includes(option) ? current.filter((item) => item !== option) : [...current, option])}>{selectedCategories.includes(option) ? "✓ " : ""}{ar ? allPlaces.find((place) => place.typeEn === option)?.type : option}</button>)}{!categoryOptions.length && <small>{ar ? "لا توجد فئات مطابقة" : "No matching categories"}</small>}</section></div>}</div>
           <div className="place-list">
             {visible.map((p) => (
               <button
