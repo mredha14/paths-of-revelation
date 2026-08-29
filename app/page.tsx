@@ -20,7 +20,6 @@ type Place = {
   lat: number;
   lng: number;
   photo: string;
-  source: string;
 };
 type FavoriteList = { id: number; title: string; placeIds: number[] };
 type TaxonomyItem = { id: number; slug: string; nameAr: string; nameEn: string };
@@ -42,7 +41,6 @@ const places: Place[] = [
     lng: 39.8579,
     photo:
       "https://images.unsplash.com/photo-1565552645890-46e7e38a0c30?auto=format&fit=crop&w=1000&q=80",
-    source: "مادة تجريبية — أضف المصدر المعتمد",
   },
   {
     id: 2,
@@ -61,7 +59,6 @@ const places: Place[] = [
     lng: 39.8601,
     photo:
       "https://images.unsplash.com/photo-1585036156171-384164a8c675?auto=format&fit=crop&w=1000&q=80",
-    source: "مادة تجريبية — أضف المصدر المعتمد",
   },
   {
     id: 3,
@@ -80,7 +77,6 @@ const places: Place[] = [
     lng: 39.6176,
     photo:
       "https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?auto=format&fit=crop&w=1000&q=80",
-    source: "مادة تجريبية — أضف المصدر المعتمد",
   },
   {
     id: 4,
@@ -98,7 +94,6 @@ const places: Place[] = [
     lng: 39.6159,
     photo:
       "https://images.unsplash.com/photo-1532264523420-881a47db012d?auto=format&fit=crop&w=1000&q=80",
-    source: "مادة تجريبية — أضف المصدر المعتمد",
   },
 ];
 export default function Home() {

@@ -36,6 +36,13 @@
       "when": 1787996889537,
       "tag": "0004_rich_old_lace",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1788020238724,
+      "tag": "0005_military_millenium_guard",
+      "breakpoints": true
     }
   ]
 }

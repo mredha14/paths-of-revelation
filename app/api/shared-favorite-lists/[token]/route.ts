@@ -21,7 +21,7 @@ export async function GET(_: Request, context: { params: Promise<{ token: string
       const place = byId.get(id);
       if (!place || place.status !== 'published') return [];
       const photo = photos.find((item) => item.placeId === id)?.objectKey;
-      return [{ id: place.id, city: place.city === 'makkah' ? 'Makkah' : 'Madinah', title: place.titleAr, titleEn: place.titleEn, type: labels[place.category]?.ar ?? place.category, typeEn: labels[place.category]?.en ?? place.category, era: place.era ?? '', eraEn: place.era ?? '', description: place.descriptionAr, descriptionEn: place.descriptionEn, lat: Number(place.latitude), lng: Number(place.longitude), photo: photoUrl(photo), source: place.sourceLabelAr ?? '' }];
+      return [{ id: place.id, city: place.city === 'makkah' ? 'Makkah' : 'Madinah', title: place.titleAr, titleEn: place.titleEn, type: labels[place.category]?.ar ?? place.category, typeEn: labels[place.category]?.en ?? place.category, era: place.era ?? '', eraEn: place.era ?? '', description: place.descriptionAr, descriptionEn: place.descriptionEn, lat: Number(place.latitude), lng: Number(place.longitude), photo: photoUrl(photo) }];
     }),
   });
 }

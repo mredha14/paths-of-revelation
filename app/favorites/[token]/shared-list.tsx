@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-type Place = { id:number; city:"Makkah"|"Madinah"; title:string; titleEn:string; type:string; typeEn:string; era:string; eraEn:string; description:string; descriptionEn:string; lat:number; lng:number; photo:string; source:string };
+type Place = { id:number; city:"Makkah"|"Madinah"; title:string; titleEn:string; type:string; typeEn:string; era:string; eraEn:string; description:string; descriptionEn:string; lat:number; lng:number; photo:string };
 type SharedList = { title: string; places: Place[] };
 
 export default function SharedList({ shareToken }: { shareToken: string }) {
