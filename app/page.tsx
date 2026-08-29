@@ -632,10 +632,6 @@ export default function Home() {
               </button>
             </section>
             <p className="description">{text(selected, "description")}</p>
-            <aside>
-              <b>{ar ? "المصدر" : "Source"}</b>
-              <small>{selected.source}</small>
-            </aside>
             <nav>
               <a
                 target="_blank"
