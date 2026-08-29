@@ -3,7 +3,7 @@ import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqli
 export const places = sqliteTable('places', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   slug: text('slug').notNull(),
-  city: text('city', { enum: ['makkah', 'madinah'] }).notNull(),
+  city: text('city').notNull(),
   latitude: text('latitude').notNull(),
   longitude: text('longitude').notNull(),
   titleAr: text('title_ar').notNull(),
@@ -62,6 +62,22 @@ export const favoriteLists = sqliteTable('favorite_lists', {
   uniqueIndex('idx_favorite_lists_share_token').on(table.shareToken),
   index('idx_favorite_lists_profile').on(table.profileId),
 ]);
+
+export const cities = sqliteTable('cities', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  slug: text('slug').notNull(),
+  nameAr: text('name_ar').notNull(),
+  nameEn: text('name_en').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [uniqueIndex('idx_cities_slug').on(table.slug)]);
+
+export const categories = sqliteTable('categories', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  slug: text('slug').notNull(),
+  nameAr: text('name_ar').notNull(),
+  nameEn: text('name_en').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+}, (table) => [uniqueIndex('idx_categories_slug').on(table.slug)]);
 
 export const favoriteListPlaces = sqliteTable('favorite_list_places', {
   id: integer('id').primaryKey({ autoIncrement: true }),

@@ -22,6 +22,7 @@ type Place = {
   source: string;
 };
 type FavoriteList = { id: number; title: string; placeIds: number[] };
+type TaxonomyItem = { id: number; slug: string; nameAr: string; nameEn: string };
 const places: Place[] = [
   {
     id: 1,
@@ -128,8 +129,15 @@ export default function Home() {
   const [favoriteError, setFavoriteError] = useState("");
   const [favoriteBusy, setFavoriteBusy] = useState(false);
   const [admin, setAdmin] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [manageTab, setManageTab] = useState<"cities" | "categories">("cities");
+  const [cities, setCities] = useState<TaxonomyItem[]>([]);
+  const [categories, setCategories] = useState<TaxonomyItem[]>([]);
+  const [taxonomyNameAr, setTaxonomyNameAr] = useState("");
+  const [taxonomyNameEn, setTaxonomyNameEn] = useState("");
+  const [taxonomyError, setTaxonomyError] = useState("");
   const [editOpen, setEditOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ title: "", titleEn: "", description: "", descriptionEn: "", city: "Makkah", category: "mosque", lat: "", lng: "" });
+  const [editForm, setEditForm] = useState({ title: "", titleEn: "", description: "", descriptionEn: "", city: "makkah", category: "mosque", lat: "", lng: "" });
   const [editPhotoFile, setEditPhotoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -138,7 +146,7 @@ export default function Home() {
     title: "",
     titleEn: "",
     coordinates: "",
-    city: "Makkah",
+    city: "makkah",
     category: "mosque",
     description: "",
     descriptionEn: "",
@@ -217,6 +225,7 @@ export default function Home() {
     if (!response.ok) throw new Error((await response.json()).error || "Could not load favorite lists.");
     setFavoriteLists(await response.json());
   };
+  const loadTaxonomy = async (token: string) => { const response = await fetch("/api/admin/taxonomy", { headers: { Authorization: "Bearer " + token } }); if (!response.ok) throw new Error("Could not load cities and categories."); const data = await response.json(); setCities(data.cities); setCategories(data.categories); };
   const openFavoritePicker = (place: Place) => {
     setPendingFavoritePlace(place);
     setFavoriteError("");
@@ -276,6 +285,8 @@ export default function Home() {
       setFavoriteBusy(false);
     }
   };
+  const saveTaxonomyItem = async (event: React.FormEvent) => { event.preventDefault(); const token = await tokenFor(); if (!token) return; setFavoriteBusy(true); setTaxonomyError(""); try { const response = await fetch("/api/admin/taxonomy", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ kind: manageTab, nameAr: taxonomyNameAr, nameEn: taxonomyNameEn }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); manageTab === "cities" ? setCities(current => [...current, data]) : setCategories(current => [...current, data]); setTaxonomyNameAr(""); setTaxonomyNameEn(""); } catch (error) { setTaxonomyError(error instanceof Error ? error.message : "Could not save this item."); } finally { setFavoriteBusy(false); } };
+  const deleteTaxonomyItem = async (item: TaxonomyItem) => { const token = await tokenFor(); if (!token) return; setFavoriteBusy(true); setTaxonomyError(""); try { const response = await fetch("/api/admin/taxonomy", { method: "DELETE", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ kind: manageTab, id: item.id, slug: item.slug }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); manageTab === "cities" ? setCities(current => current.filter(x => x.id !== item.id)) : setCategories(current => current.filter(x => x.id !== item.id)); } catch (error) { setTaxonomyError(error instanceof Error ? error.message : "Could not delete this item."); } finally { setFavoriteBusy(false); } };
   const shareFavoriteList = async (useShareSheet: boolean) => {
     if (!openFavoriteList) return;
     const token = await tokenFor();
@@ -373,6 +384,7 @@ export default function Home() {
     setAccount(profile);
     try {
       await loadFavoriteLists(result.data.session.access_token);
+      if (profile.role === "admin") await loadTaxonomy(result.data.session.access_token);
       if (pendingFavoritePlace) setFavoritePickerOpen(true);
     } catch (error) {
       setFavoriteError(error instanceof Error ? error.message : "Could not load favorite lists.");
@@ -417,7 +429,7 @@ export default function Home() {
         title: "",
         titleEn: "",
         coordinates: "",
-        city: "Makkah",
+        city: "makkah",
         category: "mosque",
         description: "",
         descriptionEn: "",
@@ -464,9 +476,7 @@ export default function Home() {
             {ar ? "قوائمي المفضلة" : "My favorite lists"} <em>{favoriteLists.length}</em>
           </button>
           {account?.role === "admin" && (
-            <button onClick={() => setAdmin(true)}>
-              {ar ? "إدارة المحتوى" : "Content admin"}
-            </button>
+            <><button onClick={() => setAdmin(true)}>{ar ? "إضافة مكان" : "Add place"}</button><button onClick={() => { setTaxonomyError(""); setManageOpen(true); }}>{ar ? "إدارة" : "Manage"}</button></>
           )}
           <button onClick={() => setLanguage(ar ? "en" : "ar")}>
             {ar ? "English" : "العربية"}
@@ -619,7 +629,7 @@ export default function Home() {
                 {ar ? "أضف إلى المفضلة" : "Add to favorites"} +
               </button>
             </nav>
-                {account?.role === "admin" && <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button disabled={saving} onClick={() => { setEditForm({title:selected.title,titleEn:selected.titleEn,description:selected.description,descriptionEn:selected.descriptionEn,city:selected.city,category:selected.typeEn === "Mosque" ? "mosque" : selected.typeEn === "Revelation site" ? "revelation" : selected.typeEn === "Mountain / landmark" ? "mountain" : "historic_site",lat:String(selected.lat),lng:String(selected.lng)}); setEditPhotoFile(null); setEditOpen(true); }} style={{ flex: 1, border: "1px solid #315e4c", background: "transparent", color: "#315e4c", padding: "9px", fontSize: 12, fontWeight: 400 }}>{ar ? "تعديل الموقع" : "Edit place"}</button><button disabled={saving} onClick={deletePlace} style={{ flex: 1, border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", padding: "9px", fontSize: 12, fontWeight: 400 }}>{ar ? "حذف الموقع" : "Delete place"}</button></div>}
+                {account?.role === "admin" && <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button disabled={saving} onClick={() => { setEditForm({title:selected.title,titleEn:selected.titleEn,description:selected.description,descriptionEn:selected.descriptionEn,city:selected.city.toLowerCase(),category:selected.typeEn === "Mosque" ? "mosque" : selected.typeEn === "Revelation site" ? "revelation" : selected.typeEn === "Mountain / landmark" ? "mountain" : "historic_site",lat:String(selected.lat),lng:String(selected.lng)}); setEditPhotoFile(null); setEditOpen(true); }} style={{ flex: 1, border: "1px solid #315e4c", background: "transparent", color: "#315e4c", padding: "9px", fontSize: 12, fontWeight: 400 }}>{ar ? "تعديل الموقع" : "Edit place"}</button><button disabled={saving} onClick={deletePlace} style={{ flex: 1, border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", padding: "9px", fontSize: 12, fontWeight: 400 }}>{ar ? "حذف الموقع" : "Delete place"}</button></div>}
           </div>
         </article>
       </section>
@@ -703,6 +713,7 @@ export default function Home() {
           </section>
         </div>
       )}
+      {manageOpen && <div className="backdrop" onClick={() => setManageOpen(false)}><section className="modal admin" onClick={(e) => e.stopPropagation()}><button className="close" onClick={() => setManageOpen(false)}>×</button><p>{ar ? "إدارة" : "MANAGE"}</p><h2>{ar ? "إدارة المدن والفئات" : "Manage cities and categories"}</h2><div className="manage-tabs"><button className={manageTab === "cities" ? "active" : ""} onClick={() => { setManageTab("cities"); setTaxonomyError(""); }}>{ar ? "المدن" : "Cities"}</button><button className={manageTab === "categories" ? "active" : ""} onClick={() => { setManageTab("categories"); setTaxonomyError(""); }}>{ar ? "الفئات" : "Categories"}</button></div><div className="manage-items">{(manageTab === "cities" ? cities : categories).map((item) => <div key={item.id}><span><b>{ar ? item.nameAr : item.nameEn}</b><small>{ar ? item.nameEn : item.nameAr}</small></span><button type="button" disabled={favoriteBusy} title={ar ? "حذف" : "Delete"} aria-label={ar ? "حذف" : "Delete"} onClick={() => deleteTaxonomyItem(item)}>🗑</button></div>)}</div><form className="form" onSubmit={saveTaxonomyItem}><label>{ar ? "الاسم بالعربية" : "Arabic name"}<input required value={taxonomyNameAr} onChange={(e) => setTaxonomyNameAr(e.target.value)} /></label><label>{ar ? "الاسم بالإنجليزية" : "English name"}<input required value={taxonomyNameEn} onChange={(e) => setTaxonomyNameEn(e.target.value)} /></label>{taxonomyError && <p className="form-error">{taxonomyError}</p>}<button disabled={favoriteBusy} className="solid wide">{ar ? "إضافة" : "Add"}</button></form></section></div>}
       {admin && (
         <div className="backdrop" onClick={() => setAdmin(false)}>
           <section className="modal admin" onClick={(e) => e.stopPropagation()}>
@@ -749,37 +760,14 @@ export default function Home() {
                 <select
                   value={form.city}
                   onChange={(e) => updateForm("city", e.target.value)}
-                >
-                  <option value="Makkah">
-                    {ar ? "مكة المكرمة" : "Makkah"}
-                  </option>
-                  <option value="Madinah">
-                    {ar ? "المدينة المنورة" : "Madinah"}
-                  </option>
-                </select>
+                >{(cities.length ? cities : [{ id: 1, slug: "makkah", nameAr: "مكة المكرمة", nameEn: "Makkah" }, { id: 2, slug: "madinah", nameAr: "المدينة المنورة", nameEn: "Madinah" }]).map((item) => <option key={item.slug} value={item.slug}>{ar ? item.nameAr : item.nameEn}</option>)}</select>
               </label>
               <label>
                 {ar ? "الفئة" : "Category"}
                 <select
                   value={form.category}
                   onChange={(e) => updateForm("category", e.target.value)}
-                >
-                  <option value="mosque">{ar ? "مسجد" : "Mosque"}</option>
-                  <option value="revelation">
-                    {ar ? "موضع وحي" : "Revelation site"}
-                  </option>
-                  <option value="mountain">
-                    {ar ? "جبل أو معلم طبيعي" : "Mountain / landmark"}
-                  </option>
-                  <option value="historic_site">
-                    {ar ? "موقع تاريخي" : "Historic site"}
-                  </option>
-                  <option value="route">{ar ? "طريق أو مسار" : "Route"}</option>
-                  <option value="residence">
-                    {ar ? "منزل أو إقامة" : "Residence"}
-                  </option>
-                  <option value="cemetery">{ar ? "مقبرة" : "Cemetery"}</option>
-                </select>
+                >{(categories.length ? categories : [{ id: 1, slug: "mosque", nameAr: "مسجد", nameEn: "Mosque" }]).map((item) => <option key={item.slug} value={item.slug}>{ar ? item.nameAr : item.nameEn}</option>)}</select>
               </label>
               <label>
                 {ar ? "صورة المكان" : "Place photo"}

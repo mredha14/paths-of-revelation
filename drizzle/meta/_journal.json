@@ -29,6 +29,13 @@
       "when": 1787993526578,
       "tag": "0003_funny_iron_lad",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1787996889537,
+      "tag": "0004_rich_old_lace",
+      "breakpoints": true
     }
   ]
 }
