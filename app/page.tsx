@@ -550,7 +550,7 @@ export default function Home() {
               </>
             ) : (
               <>
-                Discover places that tell the <i>Seerah of the Prophet and Ahlulbayt</i>
+                Discover places that tell the <i>Seerah</i>
               </>
             )}
           </h1>
