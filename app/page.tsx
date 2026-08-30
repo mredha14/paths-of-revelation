@@ -282,8 +282,8 @@ export default function Home() {
     ar ? p[k] : (p[(k + "En") as keyof Place] as string);
   const cityLabel = (city: string) => {
     const normalized = city.trim().toLowerCase();
-    if (normalized === "makkah" || normalized === "mecca") return ar ? "مكة المكرمة" : "Makkah";
-    if (normalized === "madina" || normalized === "madinah" || normalized === "medina") return ar ? "المدينة المنورة" : "Madinah";
+    const cities: Record<string, [string, string]> = { makkah: ["مكة المكرمة", "Makkah"], mecca: ["مكة المكرمة", "Makkah"], "مكة": ["مكة المكرمة", "Makkah"], "مكة المكرمة": ["مكة المكرمة", "Makkah"], madina: ["المدينة المنورة", "Madinah"], madinah: ["المدينة المنورة", "Madinah"], medina: ["المدينة المنورة", "Madinah"], "المدينة": ["المدينة المنورة", "Madinah"], "المدينة المنورة": ["المدينة المنورة", "Madinah"], karbala: ["كربلاء", "Karbala"], "كربلاء": ["كربلاء", "Karbala"], najaf: ["النجف", "Najaf"], "النجف": ["النجف", "Najaf"], mashhad: ["مشهد", "Mashhad"], "مشهد": ["مشهد", "Mashhad"] };
+    if (cities[normalized]) return cities[normalized][ar ? 0 : 1];
     return city;
   };
   const tokenFor = async () => (await supabase?.auth.getSession())?.data.session?.access_token;
@@ -660,13 +660,7 @@ export default function Home() {
           {!placesReady ? <div className="place-loading">{ar ? "جارٍ تحميل الأماكن…" : "Loading places…"}</div> : <><img src={selected.photo} alt={text(selected, "title")} />
           <div>
             <p>
-              {selected.city === "Makkah"
-                ? ar
-                  ? "مكة المكرمة"
-                  : "MAKKAH"
-                : ar
-                  ? "المدينة المنورة"
-                  : "MADINAH"}{" "}
+              {ar ? cityLabel(selected.city) : cityLabel(selected.city).toUpperCase()}{" "}
               · {text(selected, "type")}
             </p>
             <section>
