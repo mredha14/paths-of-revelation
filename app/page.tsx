@@ -605,7 +605,7 @@ export default function Home() {
               </>
             ) : (
               <>
-                Discover places that tell the Seerah
+                Discover places that tell the <i>Seerah</i>
               </>
             )}
           </h1>
