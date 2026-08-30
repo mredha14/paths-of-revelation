@@ -597,7 +597,7 @@ export default function Home() {
       </header>
       <section className="hero">
         <div>
-          <p>{ar ? "مكة المكرمة . المدينة المنورة . كربلاء . النجف . مشهد ... والمزيد" : "MAKKAH . MADINAH . KARBALA . NAJAF . MASHHAD ... AND MORE"}</p>
+          <p>{ar ? "مكة المكرمة . المدينة المنورة . كربلاء . النجف ... والمزيد" : "MAKKAH . MADINAH . KARBALA . NAJAF ... AND MORE"}</p>
           <h1>
             {ar ? (
               <>
@@ -605,14 +605,14 @@ export default function Home() {
               </>
             ) : (
               <>
-                Discover places that tell the <i>Seerah</i>
+                Discover places that tell the Seerah
               </>
             )}
           </h1>
           <small>
             {ar
-              ? "خريطة حيّة، وقصص موثقة، وخطط زيارة تشاركها مع من تحب."
-              : "A living map, sourced stories, and visit plans to share."}
+              ? "خريطة حيّة، وقصص الأمكنة، وخطط زيارة تشاركها مع من تحب."
+              : "A live map, stories, and visit plans to share."}
           </small>
         </div>
       </section>
