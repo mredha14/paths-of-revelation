@@ -619,8 +619,8 @@ export default function Home() {
             </div>
             <span>{displayedPlaces.length}</span>
           </div>
-          <button className="nearby-button" type="button" onClick={captureLocation} disabled={locationBusy}><span>◎</span>{locationBusy ? (ar ? "جارٍ تحديد موقعك…" : "Finding your location…") : userLocation ? (ar ? "تحديث الأماكن القريبة" : "Refresh nearby places") : (ar ? "الأماكن القريبة مني" : "Places near me")}</button>
-          {userLocation && <><p className="nearby-summary">{nearbyPlaces.length ? (ar ? `عرض ${nearbyPlaces.length} مكاناً ضمن ${NEARBY_RADIUS_KM} كم` : `Showing ${nearbyPlaces.length} places within ${NEARBY_RADIUS_KM} km`) : (ar ? `لا توجد أماكن ضمن ${NEARBY_RADIUS_KM} كم من موقعك.` : `No places are within ${NEARBY_RADIUS_KM} km of you.`)}</p><button className="clear-nearby-button" type="button" onClick={clearNearbyResults}>{ar ? "عرض كل الأماكن" : "Show all places"}</button></>}
+          <div className="place-controls"><button className="nearby-button" type="button" onClick={captureLocation} disabled={locationBusy}><span>◎</span>{locationBusy ? (ar ? "جارٍ تحديد موقعك…" : "Finding your location…") : userLocation ? (ar ? "تحديث الأماكن القريبة" : "Refresh nearby places") : (ar ? "الأماكن القريبة مني" : "Places near me")}</button>{userLocation && <button className="clear-nearby-button" type="button" onClick={clearNearbyResults}>{ar ? "كل الأماكن" : "Show all"}</button>}</div>
+          {userLocation && <p className="nearby-summary">{nearbyPlaces.length ? (ar ? `${nearbyPlaces.length} ضمن ${NEARBY_RADIUS_KM} كم` : `${nearbyPlaces.length} within ${NEARBY_RADIUS_KM} km`) : (ar ? `لا توجد أماكن ضمن ${NEARBY_RADIUS_KM} كم` : `No places within ${NEARBY_RADIUS_KM} km`)}</p>}
           {locationError && <p className="nearby-error">{locationError}</p>}
           <div className="filter-wrap" ref={filterRef}><div className="filters"><button className={(selectedCities.length || selectedCategories.length) ? "active" : ""} onClick={() => setFiltersOpen((open) => !open)}>{ar ? "تصفية" : "Filter"}{(selectedCities.length + selectedCategories.length) ? ` · ${selectedCities.length + selectedCategories.length}` : ""}</button>{(selectedCities.length || selectedCategories.length) > 0 && <button onClick={() => { setSelectedCities([]); setSelectedCategories([]); }}>{ar ? "مسح" : "Clear"}</button>}</div>{filtersOpen && <div className="filter-panel"><section><b>{ar ? "المدن" : "Cities"}</b>{cityOptions.map((option) => <button key={option} className={selectedCities.includes(option) ? "checked" : ""} onClick={() => setSelectedCities((current) => current.includes(option) ? current.filter((item) => item !== option) : [...current, option])}>{selectedCities.includes(option) ? "✓ " : ""}{ar ? allPlaces.find((place) => place.city === option)?.cityAr ?? option : option}</button>)}</section><section><b>{ar ? "الفئات" : "Categories"}</b>{categoryOptions.map((option) => <button key={option} className={selectedCategories.includes(option) ? "checked" : ""} onClick={() => setSelectedCategories((current) => current.includes(option) ? current.filter((item) => item !== option) : [...current, option])}>{selectedCategories.includes(option) ? "✓ " : ""}{ar ? allPlaces.find((place) => place.typeEn === option)?.type : option}</button>)}{!categoryOptions.length && <small>{ar ? "لا توجد فئات مطابقة" : "No matching categories"}</small>}</section></div>}</div>
           <div className="place-list">
@@ -639,11 +639,6 @@ export default function Home() {
               </button>
             ))}
           </div>
-          <footer>
-            {ar
-              ? "© OpenStreetMap · جميع المواقع مرتبطة بإحداثياتها"
-              : "© OpenStreetMap · all places use GPS coordinates"}
-          </footer>
         </aside>
         <div className="map-area">
           <div
