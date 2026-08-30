@@ -280,6 +280,12 @@ export default function Home() {
   useEffect(() => { setSelectedCategories((current) => current.filter((category) => categoryOptions.includes(category))); }, [categoryOptions.join("|")]);
   const text = (p: Place, k: "title" | "type" | "era" | "description") =>
     ar ? p[k] : (p[(k + "En") as keyof Place] as string);
+  const cityLabel = (city: string) => {
+    const normalized = city.trim().toLowerCase();
+    if (normalized === "makkah" || normalized === "mecca") return ar ? "مكة المكرمة" : "Makkah";
+    if (normalized === "madina" || normalized === "madinah" || normalized === "medina") return ar ? "المدينة المنورة" : "Madinah";
+    return city;
+  };
   const tokenFor = async () => (await supabase?.auth.getSession())?.data.session?.access_token;
   const loadFavoriteLists = async (token: string) => {
     const response = await fetch("/api/favorite-lists", { headers: { Authorization: "Bearer " + token } });
@@ -632,7 +638,7 @@ export default function Home() {
                 <img src={p.photo} alt="" />
                 <span>
                   <b>{text(p, "title")}</b>
-                  <small>{userLocation ? `${distanceInKm(userLocation, p).toFixed(1)} km · ${ar ? p.city === "Makkah" ? "مكة المكرمة" : "المدينة المنورة" : p.city} · ${text(p, "type")}` : `${ar ? p.city === "Makkah" ? "مكة المكرمة" : "المدينة المنورة" : p.city} · ${text(p, "type")}`}</small>
+                  <small>{userLocation ? `${distanceInKm(userLocation, p).toFixed(1)} km · ${cityLabel(p.city)} · ${text(p, "type")}` : `${cityLabel(p.city)} · ${text(p, "type")}`}</small>
                 </span>
                 <i>↗</i>
               </button>
