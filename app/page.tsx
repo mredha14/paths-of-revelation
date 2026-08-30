@@ -591,7 +591,7 @@ export default function Home() {
       </header>
       <section className="hero">
         <div>
-          <p>{ar ? "مكة المكرمة · المدينة المنورة" : "MAKKAH . MADINAH . KARBALA . NAJAF . MASHHAD ... AND MORE"}</p>
+          <p>{ar ? "مكة المكرمة . المدينة المنورة . كربلاء . النجف . مشهد ... والمزيد" : "MAKKAH . MADINAH . KARBALA . NAJAF . MASHHAD ... AND MORE"}</p>
           <h1>
             {ar ? (
               <>
@@ -632,7 +632,7 @@ export default function Home() {
                 <img src={p.photo} alt="" />
                 <span>
                   <b>{text(p, "title")}</b>
-                  <small>{userLocation ? `${distanceInKm(userLocation, p).toFixed(1)} km · ${text(p, "type")}` : text(p, "type")}</small>
+                  <small>{userLocation ? `${distanceInKm(userLocation, p).toFixed(1)} km · ${ar ? p.city === "Makkah" ? "مكة المكرمة" : "المدينة المنورة" : p.city} · ${text(p, "type")}` : `${ar ? p.city === "Makkah" ? "مكة المكرمة" : "المدينة المنورة" : p.city} · ${text(p, "type")}`}</small>
                 </span>
                 <i>↗</i>
               </button>
