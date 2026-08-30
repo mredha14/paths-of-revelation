@@ -23,6 +23,17 @@ type Place = {
 };
 type FavoriteList = { id: number; title: string; placeIds: number[] };
 type TaxonomyItem = { id: number; slug: string; nameAr: string; nameEn: string };
+type UserLocation = { lat: number; lng: number };
+const NEARBY_RADIUS_KM = 50;
+
+const distanceInKm = (from: UserLocation, to: Pick<Place, "lat" | "lng">) => {
+  const radians = (degrees: number) => (degrees * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const latDistance = radians(to.lat - from.lat);
+  const lngDistance = radians(to.lng - from.lng);
+  const a = Math.sin(latDistance / 2) ** 2 + Math.cos(radians(from.lat)) * Math.cos(radians(to.lat)) * Math.sin(lngDistance / 2) ** 2;
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
 const places: Place[] = [
   {
     id: 1,
@@ -120,6 +131,9 @@ export default function Home() {
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [locationBusy, setLocationBusy] = useState(false);
+  const [locationError, setLocationError] = useState("");
   const [allPlaces, setAllPlaces] = useState<Place[]>(places);
   const [placesReady, setPlacesReady] = useState(false);
   const [selected, setSelected] = useState(places[0]);
@@ -160,6 +174,8 @@ export default function Home() {
   const cityMatches = selectedCities.length ? allPlaces.filter((place) => selectedCities.includes(place.city)) : allPlaces;
   const categoryOptions = Array.from(new Set(cityMatches.map((place) => place.typeEn)));
   const visible = placesReady ? cityMatches.filter((place) => !selectedCategories.length || selectedCategories.includes(place.typeEn)) : [];
+  const nearbyPlaces = userLocation ? visible.map((place) => ({ place, distance: distanceInKm(userLocation, place) })).filter(({ distance }) => distance <= NEARBY_RADIUS_KM).sort((a, b) => a.distance - b.distance) : [];
+  const displayedPlaces = userLocation ? nearbyPlaces.map(({ place }) => place) : visible;
   const openFavoriteList = favoriteLists.find((list) => list.id === openFavoriteListId) ?? null;
   useEffect(() => {
     fetch("/api/auth/config")
@@ -236,7 +252,10 @@ export default function Home() {
     markers.current?.remove();
     const layer = L.layerGroup().addTo(map);
     markers.current = layer;
-    visible.forEach((place) => {
+    if (userLocation) {
+      L.circleMarker([userLocation.lat, userLocation.lng], { radius: 9, color: "#fff", weight: 3, fillColor: "#2f78c4", fillOpacity: 1 }).addTo(layer).bindTooltip(ar ? "موقعك" : "Your location", { direction: "top", offset: [0, -8] });
+    }
+    displayedPlaces.forEach((place) => {
       const isSelected = place.id === selected.id;
       const marker = L.circleMarker([place.lat, place.lng], {
         radius: isSelected ? 12 : 9,
@@ -257,7 +276,7 @@ export default function Home() {
         });
       });
     });
-  }, [mapReady, visible, selected]);
+  }, [ar, displayedPlaces, mapReady, selected, userLocation]);
   useEffect(() => { setSelectedCategories((current) => current.filter((category) => categoryOptions.includes(category))); }, [categoryOptions.join("|")]);
   const text = (p: Place, k: "title" | "type" | "era" | "description") =>
     ar ? p[k] : (p[(k + "En") as keyof Place] as string);
@@ -380,6 +399,29 @@ export default function Home() {
         animate: true,
         duration: 0.65,
       });
+  };
+  const captureLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError(ar ? "تحديد الموقع غير مدعوم في هذا المتصفح." : "Location is not supported by this browser.");
+      return;
+    }
+    setLocationBusy(true);
+    setLocationError("");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const location = { lat: coords.latitude, lng: coords.longitude };
+        setUserLocation(location);
+        setLocationBusy(false);
+        const nearest = visible.map((place) => ({ place, distance: distanceInKm(location, place) })).filter(({ distance }) => distance <= NEARBY_RADIUS_KM).sort((a, b) => a.distance - b.distance)[0]?.place;
+        if (nearest) setSelected(nearest);
+        mapInstance.current?.flyTo([location.lat, location.lng], 12, { animate: true, duration: 0.65 });
+      },
+      (error) => {
+        setLocationBusy(false);
+        setLocationError(error.code === error.PERMISSION_DENIED ? (ar ? "يرجى السماح بالوصول إلى موقعك لعرض الأماكن القريبة." : "Allow location access to see nearby places.") : (ar ? "تعذر تحديد موقعك. حاول مرة أخرى." : "We could not determine your location. Please try again."));
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    );
   };
   const submitAuth = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -570,11 +612,14 @@ export default function Home() {
               <p>{ar ? "استكشف الخريطة" : "EXPLORE THE MAP"}</p>
               <h2>{ar ? "الأماكن المقدسة" : "Sacred places"}</h2>
             </div>
-            <span>{visible.length}</span>
+            <span>{displayedPlaces.length}</span>
           </div>
+          <button className="nearby-button" type="button" onClick={captureLocation} disabled={locationBusy}><span>◎</span>{locationBusy ? (ar ? "جارٍ تحديد موقعك…" : "Finding your location…") : userLocation ? (ar ? "تحديث الأماكن القريبة" : "Refresh nearby places") : (ar ? "الأماكن القريبة مني" : "Places near me")}</button>
+          {userLocation && <p className="nearby-summary">{nearbyPlaces.length ? (ar ? `عرض ${nearbyPlaces.length} مكاناً ضمن ${NEARBY_RADIUS_KM} كم` : `Showing ${nearbyPlaces.length} places within ${NEARBY_RADIUS_KM} km`) : (ar ? `لا توجد أماكن ضمن ${NEARBY_RADIUS_KM} كم من موقعك.` : `No places are within ${NEARBY_RADIUS_KM} km of you.`)}</p>}
+          {locationError && <p className="nearby-error">{locationError}</p>}
           <div className="filter-wrap" ref={filterRef}><div className="filters"><button className={(selectedCities.length || selectedCategories.length) ? "active" : ""} onClick={() => setFiltersOpen((open) => !open)}>{ar ? "تصفية" : "Filter"}{(selectedCities.length + selectedCategories.length) ? ` · ${selectedCities.length + selectedCategories.length}` : ""}</button>{(selectedCities.length || selectedCategories.length) > 0 && <button onClick={() => { setSelectedCities([]); setSelectedCategories([]); }}>{ar ? "مسح" : "Clear"}</button>}</div>{filtersOpen && <div className="filter-panel"><section><b>{ar ? "المدن" : "Cities"}</b>{cityOptions.map((option) => <button key={option} className={selectedCities.includes(option) ? "checked" : ""} onClick={() => setSelectedCities((current) => current.includes(option) ? current.filter((item) => item !== option) : [...current, option])}>{selectedCities.includes(option) ? "✓ " : ""}{ar ? allPlaces.find((place) => place.city === option)?.cityAr ?? option : option}</button>)}</section><section><b>{ar ? "الفئات" : "Categories"}</b>{categoryOptions.map((option) => <button key={option} className={selectedCategories.includes(option) ? "checked" : ""} onClick={() => setSelectedCategories((current) => current.includes(option) ? current.filter((item) => item !== option) : [...current, option])}>{selectedCategories.includes(option) ? "✓ " : ""}{ar ? allPlaces.find((place) => place.typeEn === option)?.type : option}</button>)}{!categoryOptions.length && <small>{ar ? "لا توجد فئات مطابقة" : "No matching categories"}</small>}</section></div>}</div>
           <div className="place-list">
-            {visible.map((p) => (
+            {displayedPlaces.map((p) => (
               <button
                 className={selected.id === p.id ? "selected" : ""}
                 onClick={() => selectFromList(p)}
@@ -583,7 +628,7 @@ export default function Home() {
                 <img src={p.photo} alt="" />
                 <span>
                   <b>{text(p, "title")}</b>
-                  <small>{text(p, "type")}</small>
+                  <small>{userLocation ? `${distanceInKm(userLocation, p).toFixed(1)} km · ${text(p, "type")}` : text(p, "type")}</small>
                 </span>
                 <i>↗</i>
               </button>
