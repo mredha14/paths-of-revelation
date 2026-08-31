@@ -639,7 +639,7 @@ export default function Home() {
                 <img src={p.photo} alt="" />
                 <span>
                   <b>{text(p, "title")}</b>
-                  <small>{userLocation ? `${distanceInKm(userLocation, p).toFixed(1)} km · ${cityLabel(p)} · ${text(p, "type")}` : `${cityLabel(p)} · ${text(p, "type")}`}</small>
+                  <small>{userLocation ? `${distanceInKm(userLocation, p).toFixed(1)} ${ar ? "كم" : "km"} · ${cityLabel(p)} · ${text(p, "type")}` : `${cityLabel(p)} · ${text(p, "type")}`}</small>
                 </span>
                 <i>↗</i>
               </button>
