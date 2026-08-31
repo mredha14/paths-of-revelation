@@ -554,7 +554,7 @@ export default function Home() {
     event.preventDefault();
     const token = (await supabase?.auth.getSession())?.data.session?.access_token; if (!token) return;
     const [lat,lng]=editForm.coordinates.split(",").map(Number); if(!Number.isFinite(lat)||!Number.isFinite(lng)){setFormError(ar?"أدخل الإحداثيات بصيغة: خط العرض، خط الطول":"Enter coordinates as: latitude, longitude");return;}
-    setSaving(true); try { const payload=new FormData(); Object.entries(editForm).filter(([key])=>key!=="coordinates").forEach(([key,value])=>payload.append(key,value)); payload.append("lat",String(lat)); payload.append("lng",String(lng)); if(editPhotoFile)payload.append('photo',editPhotoFile); const response=await fetch(`/api/places/${selected.id}`,{method:"PUT",headers:{Authorization:"Bearer "+token},body:payload}); const data=await response.json(); if(!response.ok)throw new Error(data.error); const updated={...selected,...editForm,lat,lng,photo:editPhotoFile?URL.createObjectURL(editPhotoFile):selected.photo}; setSelected(updated); setAllPlaces(current=>current.map(place=>place.id===updated.id?updated:place)); setEditOpen(false); } catch(error){setFormError(error instanceof Error?error.message:"Could not update this place.");} finally{setSaving(false);}
+    setSaving(true); try { const payload=new FormData(); Object.entries(editForm).filter(([key])=>key!=="coordinates"&&key!=="lat"&&key!=="lng").forEach(([key,value])=>payload.append(key,value)); payload.append("lat",String(lat)); payload.append("lng",String(lng)); if(editPhotoFile)payload.append('photo',editPhotoFile); const response=await fetch(`/api/places/${selected.id}`,{method:"PUT",headers:{Authorization:"Bearer "+token},body:payload}); const data=await response.json(); if(!response.ok)throw new Error(data.error); const updated={...selected,...editForm,lat,lng,photo:editPhotoFile?URL.createObjectURL(editPhotoFile):selected.photo}; setSelected(updated); setAllPlaces(current=>current.map(place=>place.id===updated.id?updated:place)); setEditOpen(false); } catch(error){setFormError(error instanceof Error?error.message:"Could not update this place.");} finally{setSaving(false);}
   };
   return (
     <main dir={ar ? "rtl" : "ltr"} className="site">
@@ -801,15 +801,6 @@ export default function Home() {
                 />
               </label>
               <label>
-                GPS
-                <input
-                  required
-                  value={form.coordinates}
-                  onChange={(e) => updateForm("coordinates", e.target.value)}
-                  placeholder="21.4225, 39.8262"
-                />
-              </label>
-              <label>
                 {ar ? "المدينة" : "City"}
                 <select
                   value={form.city}
@@ -822,6 +813,15 @@ export default function Home() {
                   value={form.category}
                   onChange={(e) => updateForm("category", e.target.value)}
                 >{(categories.length ? categories : [{ id: 1, slug: "mosque", nameAr: "مسجد", nameEn: "Mosque" }]).map((item) => <option key={item.slug} value={item.slug}>{ar ? item.nameAr : item.nameEn}</option>)}</select>
+              </label>
+              <label>
+                GPS
+                <input
+                  required
+                  value={form.coordinates}
+                  onChange={(e) => updateForm("coordinates", e.target.value)}
+                  placeholder="21.4225, 39.8262"
+                />
               </label>
               <label>
                 {ar ? "صورة المكان" : "Place photo"}
