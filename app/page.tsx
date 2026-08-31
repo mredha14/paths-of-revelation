@@ -7,7 +7,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 type Place = {
   id: number;
-  city: "Makkah" | "Madinah";
+  city: string;
   cityAr?: string;
   title: string;
   titleEn: string;
@@ -280,11 +280,12 @@ export default function Home() {
   useEffect(() => { setSelectedCategories((current) => current.filter((category) => categoryOptions.includes(category))); }, [categoryOptions.join("|")]);
   const text = (p: Place, k: "title" | "type" | "era" | "description") =>
     ar ? p[k] : (p[(k + "En") as keyof Place] as string);
-  const cityLabel = (city: string) => {
-    const normalized = city.trim().toLowerCase();
+  const cityLabel = (place: Pick<Place, "city" | "cityAr">) => {
+    if (ar && place.cityAr) return place.cityAr;
+    const normalized = place.city.trim().toLowerCase();
     const cities: Record<string, [string, string]> = { makkah: ["مكة المكرمة", "Makkah"], mecca: ["مكة المكرمة", "Makkah"], "مكة": ["مكة المكرمة", "Makkah"], "مكة المكرمة": ["مكة المكرمة", "Makkah"], madina: ["المدينة المنورة", "Madinah"], madinah: ["المدينة المنورة", "Madinah"], medina: ["المدينة المنورة", "Madinah"], "المدينة": ["المدينة المنورة", "Madinah"], "المدينة المنورة": ["المدينة المنورة", "Madinah"], karbala: ["كربلاء", "Karbala"], "كربلاء": ["كربلاء", "Karbala"], najaf: ["النجف", "Najaf"], "النجف": ["النجف", "Najaf"], mashhad: ["مشهد", "Mashhad"], "مشهد": ["مشهد", "Mashhad"] };
     if (cities[normalized]) return cities[normalized][ar ? 0 : 1];
-    return city;
+    return place.city;
   };
   const tokenFor = async () => (await supabase?.auth.getSession())?.data.session?.access_token;
   const loadFavoriteLists = async (token: string) => {
@@ -638,7 +639,7 @@ export default function Home() {
                 <img src={p.photo} alt="" />
                 <span>
                   <b>{text(p, "title")}</b>
-                  <small>{userLocation ? `${distanceInKm(userLocation, p).toFixed(1)} km · ${cityLabel(p.city)} · ${text(p, "type")}` : `${cityLabel(p.city)} · ${text(p, "type")}`}</small>
+                  <small>{userLocation ? `${distanceInKm(userLocation, p).toFixed(1)} km · ${cityLabel(p)} · ${text(p, "type")}` : `${cityLabel(p)} · ${text(p, "type")}`}</small>
                 </span>
                 <i>↗</i>
               </button>
@@ -660,7 +661,7 @@ export default function Home() {
           {!placesReady ? <div className="place-loading">{ar ? "جارٍ تحميل الأماكن…" : "Loading places…"}</div> : <><img src={selected.photo} alt={text(selected, "title")} />
           <div>
             <p>
-              {ar ? cityLabel(selected.city) : cityLabel(selected.city).toUpperCase()}{" "}
+              {ar ? cityLabel(selected) : cityLabel(selected).toUpperCase()}{" "}
               · {text(selected, "type")}
             </p>
             <section>
