@@ -264,7 +264,7 @@ export default function Home() {
         fillColor: isSelected ? "#ba8132" : "#315e4c",
         fillOpacity: 1,
       }).addTo(layer);
-      marker.bindTooltip(place.title, {
+      marker.bindTooltip(ar ? place.title : place.titleEn, {
         direction: "top",
         offset: [0, -8],
         opacity: 0.94,
