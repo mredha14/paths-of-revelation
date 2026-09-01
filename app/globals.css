@@ -25,3 +25,4 @@ main[dir=rtl] .card .description{font-family:'Thmanyah Text','DM Sans',sans-seri
 .place-controls{margin-bottom:10px}.place-list button{height:58px;min-height:58px}.place-list button span{min-width:0}.place-list b,.place-list small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .place-list{align-content:start}
 .site>header>nav.mobile-open{gap:0;padding-inline:0;justify-items:center;place-content:center}.site>header>nav.mobile-open button{display:flex!important;align-items:center;justify-content:center!important;text-align:center!important}.site>header>nav.mobile-open button:not(.solid){border-bottom:1px solid var(--line)}.site>header>nav.mobile-open .solid{width:calc(100% - 16px)!important;margin-inline:8px;text-align:center!important}
+.hero h1{font-weight:700}.hero h1 i{font-weight:700}
