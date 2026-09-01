@@ -614,7 +614,7 @@ export default function Home() {
           <small>
             {ar
               ? "خريطة حيّة، وقصص الأمكنة، وخطط زيارة تشاركها مع من تحب."
-              : "A live map, stories, and visit plans to share."}
+              : "A live map, inspiring stories, and visit plans to share with loved ones."}
           </small>
         </div>
       </section>

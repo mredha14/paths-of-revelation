@@ -1,4 +1,4 @@
-@import 'tailwindcss';@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
 @font-face{font-family:'Thmanyah Display';src:url('/fonts/ThmanyahDisplay-Regular.woff2') format('woff2');font-weight:400;font-display:swap}@font-face{font-family:'Thmanyah Display';src:url('/fonts/ThmanyahDisplay-Bold.woff2') format('woff2');font-weight:700;font-display:swap}@font-face{font-family:'Thmanyah Text';src:url('/fonts/ThmanyahText-Regular.woff2') format('woff2');font-weight:400;font-display:swap}@font-face{font-family:'Thmanyah Text';src:url('/fonts/ThmanyahText-Bold.woff2') format('woff2');font-weight:700;font-display:swap}
 main[dir=rtl]{font-family:'Thmanyah Text','DM Sans',sans-serif}main[dir=rtl] h1,main[dir=rtl] h2,main[dir=rtl] h3,main[dir=rtl] b,main[dir=rtl] .brand{font-family:'Thmanyah Display','DM Sans',sans-serif}
 @media (min-width:721px) and (max-width:1050px){main[dir=rtl] .card{left:20px;right:auto}}
@@ -26,3 +26,4 @@ main[dir=rtl] .card .description{font-family:'Thmanyah Text','DM Sans',sans-seri
 .place-list{align-content:start}
 .site>header>nav.mobile-open{gap:0;padding-inline:0;justify-items:center;place-content:center}.site>header>nav.mobile-open button{display:flex!important;align-items:center;justify-content:center!important;text-align:center!important}.site>header>nav.mobile-open button:not(.solid){border-bottom:1px solid var(--line)}.site>header>nav.mobile-open .solid{width:calc(100% - 16px)!important;margin-inline:8px;text-align:center!important}
 .hero h1{font-weight:700}.hero h1 i{font-weight:700}
+main:not([dir=rtl]) h1,main:not([dir=rtl]) h2,main:not([dir=rtl]) h3,.site>header .brand b{font-family:'Cormorant Garamond',Georgia,serif}
