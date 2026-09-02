@@ -642,6 +642,7 @@ export default function Home() {
         </div>
       </section>
       <section id="map" className="workspace" ref={workspaceRef}>
+        <div className="map-panels">
         <aside className="explorer">
           <div className="explorer-heading">
             <div>
@@ -680,6 +681,7 @@ export default function Home() {
                 : "Interactive map of Makkah and Madinah"
             }
           />
+        </div>
         </div>
         <article className="card">
           {!placesReady ? <div className="place-loading">{ar ? "جارٍ تحميل الأماكن…" : "Loading places…"}</div> : <><img src={selected.photo} alt={text(selected, "title")} />
