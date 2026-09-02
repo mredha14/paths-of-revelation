@@ -657,7 +657,7 @@ export default function Home() {
           {locationError && <p className="nearby-error">{locationError}</p>}
           <div className="place-list">
             {displayedPlaces.map((p) => (
-              <div className="place-list-item" key={p.id}>
+              <div className={`place-list-item${selected.id === p.id ? " selected" : ""}`} key={p.id}>
                 <button className={selected.id === p.id ? "selected" : ""} onClick={() => selectFromList(p)}>
                   <img src={p.photo} alt="" />
                   <span>
