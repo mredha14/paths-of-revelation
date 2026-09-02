@@ -128,7 +128,7 @@ export default function Home() {
   const [authError, setAuthError] = useState("");
   const [language, setLanguage] = useState<"ar" | "en">("ar");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [heroDismissed, setHeroDismissed] = useState(false);
+  const [heroCollapsed, setHeroCollapsed] = useState(false);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -172,16 +172,21 @@ export default function Home() {
   });
   const ar = language === "ar";
   useEffect(() => {
-    setHeroDismissed(window.sessionStorage.getItem("hero-dismissed") === "true");
+    let frame = 0;
+    const updateHero = () => {
+      frame = 0;
+      setHeroCollapsed(window.scrollY > 0);
+    };
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(updateHero);
+    };
+    updateHero();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, []);
-  const dismissHero = () => {
-    window.sessionStorage.setItem("hero-dismissed", "true");
-    setHeroDismissed(true);
-  };
-  const showHero = () => {
-    window.sessionStorage.removeItem("hero-dismissed");
-    setHeroDismissed(false);
-  };
   const cityOptions = Array.from(new Set(allPlaces.map((place) => place.city)));
   const cityMatches = selectedCities.length ? allPlaces.filter((place) => selectedCities.includes(place.city)) : allPlaces;
   const categoryOptions = Array.from(new Set(cityMatches.map((place) => place.typeEn)));
@@ -609,10 +614,7 @@ export default function Home() {
           )}
         </nav>
       </header>
-      {heroDismissed ? (
-        <div className="hero-return"><button type="button" onClick={showHero}>{ar ? "إظهار المقدمة" : "Show introduction"}</button></div>
-      ) : <section className="hero">
-        <button className="hero-dismiss" type="button" onClick={dismissHero} aria-label={ar ? "إخفاء المقدمة" : "Dismiss introduction"} title={ar ? "إخفاء المقدمة" : "Dismiss introduction"}>×</button>
+      <section className={`hero${heroCollapsed ? " hero-collapsed" : ""}`} aria-hidden={heroCollapsed}>
         <div>
           <p>{ar ? "مكة المكرمة . المدينة المنورة . كربلاء . النجف ... والمزيد" : "MAKKAH . MADINAH . KARBALA . NAJAF ... AND MORE"}</p>
           <h1>
@@ -632,7 +634,7 @@ export default function Home() {
               : "A live map, inspiring stories, and visit plans to share with loved ones."}
           </small>
         </div>
-      </section>}
+      </section>
       <section id="map" className="workspace">
         <aside className="explorer">
           <div className="explorer-heading">
