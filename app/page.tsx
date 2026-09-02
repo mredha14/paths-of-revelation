@@ -128,7 +128,6 @@ export default function Home() {
   const [authError, setAuthError] = useState("");
   const [language, setLanguage] = useState<"ar" | "en">("ar");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [heroCollapsed, setHeroCollapsed] = useState(false);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -171,22 +170,6 @@ export default function Home() {
     descriptionEn: "",
   });
   const ar = language === "ar";
-  useEffect(() => {
-    let frame = 0;
-    const updateHero = () => {
-      frame = 0;
-      setHeroCollapsed(window.scrollY > 100);
-    };
-    const onScroll = () => {
-      if (!frame) frame = window.requestAnimationFrame(updateHero);
-    };
-    updateHero();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (frame) window.cancelAnimationFrame(frame);
-    };
-  }, []);
   const cityOptions = Array.from(new Set(allPlaces.map((place) => place.city)));
   const cityMatches = selectedCities.length ? allPlaces.filter((place) => selectedCities.includes(place.city)) : allPlaces;
   const categoryOptions = Array.from(new Set(cityMatches.map((place) => place.typeEn)));
@@ -614,7 +597,7 @@ export default function Home() {
           )}
         </nav>
       </header>
-      <section className={`hero${heroCollapsed ? " hero-collapsed" : ""}`} aria-hidden={heroCollapsed}>
+      <section className="hero">
         <div>
           <p>{ar ? "مكة المكرمة . المدينة المنورة . كربلاء . النجف ... والمزيد" : "MAKKAH . MADINAH . KARBALA . NAJAF ... AND MORE"}</p>
           <h1>
