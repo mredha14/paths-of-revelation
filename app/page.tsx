@@ -109,6 +109,8 @@ const places: Place[] = [
 ];
 export default function Home() {
   const mapRef = useRef<HTMLDivElement>(null);
+  const workspaceRef = useRef<HTMLElement>(null);
+  const hasJumpedToWorkspace = useRef(false);
   const filterRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<Leaflet.Map | null>(null);
   const markers = useRef<Leaflet.LayerGroup | null>(null);
@@ -128,7 +130,6 @@ export default function Home() {
   const [authError, setAuthError] = useState("");
   const [language, setLanguage] = useState<"ar" | "en">("ar");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [heroCollapsed, setHeroCollapsed] = useState(false);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -173,14 +174,19 @@ export default function Home() {
   const ar = language === "ar";
   useEffect(() => {
     let frame = 0;
-    const updateHero = () => {
+    const moveToWorkspace = () => {
       frame = 0;
-      setHeroCollapsed(window.scrollY > 0);
+      if (window.scrollY === 0) {
+        hasJumpedToWorkspace.current = false;
+      } else if (!hasJumpedToWorkspace.current) {
+        hasJumpedToWorkspace.current = true;
+        workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     };
     const onScroll = () => {
-      if (!frame) frame = window.requestAnimationFrame(updateHero);
+      if (!frame) frame = window.requestAnimationFrame(moveToWorkspace);
     };
-    updateHero();
+    moveToWorkspace();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
@@ -614,7 +620,7 @@ export default function Home() {
           )}
         </nav>
       </header>
-      <section className={`hero${heroCollapsed ? " hero-collapsed" : ""}`} aria-hidden={heroCollapsed}>
+      <section className="hero">
         <div>
           <p>{ar ? "مكة المكرمة . المدينة المنورة . كربلاء . النجف ... والمزيد" : "MAKKAH . MADINAH . KARBALA . NAJAF ... AND MORE"}</p>
           <h1>
@@ -635,7 +641,7 @@ export default function Home() {
           </small>
         </div>
       </section>
-      <section id="map" className="workspace">
+      <section id="map" className="workspace" ref={workspaceRef}>
         <aside className="explorer">
           <div className="explorer-heading">
             <div>
