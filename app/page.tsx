@@ -130,6 +130,7 @@ export default function Home() {
   const [authError, setAuthError] = useState("");
   const [language, setLanguage] = useState<"ar" | "en">("ar");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobilePlaceDetailsOpen, setMobilePlaceDetailsOpen] = useState(false);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -294,6 +295,7 @@ export default function Home() {
       });
       marker.on("click", () => {
         setSelected(place);
+        if (window.matchMedia("(max-width: 720px)").matches) setMobilePlaceDetailsOpen(true);
         map.flyTo([place.lat, place.lng], Math.max(map.getZoom(), 14), {
           duration: 0.65,
         });
@@ -680,6 +682,10 @@ export default function Home() {
                 : "Interactive map of Makkah and Madinah"
             }
           />
+          <div className="mobile-place-actions">
+            <button type="button" onClick={() => setMobilePlaceDetailsOpen(true)}>{ar ? "تفاصيل المكان" : "Place details"}</button>
+            <a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`}>{ar ? "الاتجاهات" : "Directions"} ↗</a>
+          </div>
         </div>
         <article className="card">
           {!placesReady ? <div className="place-loading">{ar ? "جارٍ تحميل الأماكن…" : "Loading places…"}</div> : <><img src={selected.photo} alt={text(selected, "title")} />
@@ -709,6 +715,21 @@ export default function Home() {
                 {account?.role === "admin" && <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button disabled={saving} onClick={() => { setEditForm({title:selected.title,titleEn:selected.titleEn,description:selected.description,descriptionEn:selected.descriptionEn,city:cities.find(item=>item.nameEn===selected.city||item.nameAr===selected.city)?.slug??selected.city.toLowerCase(),category:categories.find(item=>item.nameEn===selected.typeEn||item.nameAr===selected.type)?.slug??selected.typeEn.toLowerCase(),coordinates:`${selected.lat}, ${selected.lng}`,lat:String(selected.lat),lng:String(selected.lng)}); setEditPhotoFile(null); setEditOpen(true); }} style={{ flex: 1, border: "1px solid #315e4c", background: "transparent", color: "#315e4c", padding: "9px", fontSize: 12, fontWeight: 400 }}>{ar ? "تعديل الموقع" : "Edit place"}</button><button disabled={saving} onClick={deletePlace} style={{ flex: 1, border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", padding: "9px", fontSize: 12, fontWeight: 400 }}>{ar ? "حذف الموقع" : "Delete place"}</button></div>}
           </div></>}
         </article>
+        {mobilePlaceDetailsOpen && <div className="mobile-place-backdrop" onClick={() => setMobilePlaceDetailsOpen(false)}>
+          <article className="mobile-place-modal" role="dialog" aria-modal="true" aria-label={text(selected, "title")} onClick={(event) => event.stopPropagation()}>
+            <button className="close" type="button" onClick={() => setMobilePlaceDetailsOpen(false)} aria-label={ar ? "إغلاق" : "Close"}>×</button>
+            <img src={selected.photo} alt={text(selected, "title")} />
+            <div>
+              <p>{ar ? cityLabel(selected) : cityLabel(selected).toUpperCase()} · {text(selected, "type")}</p>
+              <h2>{text(selected, "title")}</h2>
+              <p className="description">{text(selected, "description")}</p>
+              <nav>
+                <a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`}>{ar ? "الاتجاهات" : "Directions"} ↗</a>
+                <button type="button" onClick={() => openFavoritePicker(selected)}>{ar ? "أضف إلى المفضلة" : "Add to favorites"} +</button>
+              </nav>
+            </div>
+          </article>
+        </div>}
       </section>
       <section className="principles">
         <div>
