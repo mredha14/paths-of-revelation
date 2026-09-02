@@ -657,18 +657,18 @@ export default function Home() {
           {locationError && <p className="nearby-error">{locationError}</p>}
           <div className="place-list">
             {displayedPlaces.map((p) => (
-              <div className="place-list-item" key={p.id}>
-                <button className={selected.id === p.id ? "selected" : ""} onClick={() => selectFromList(p)}>
-                  <img src={p.photo} alt="" />
-                  <span>
-                    <b>{text(p, "title")}</b>
-                    <small>{userLocation ? `${distanceInKm(userLocation, p).toFixed(1)} ${ar ? "كم" : "km"} · ${cityLabel(p)} · ${text(p, "type")}` : `${cityLabel(p)} · ${text(p, "type")}`}</small>
-                  </span>
-                  <i>↗</i>
-                </button>
-                <a className="mobile-place-list-action" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`} aria-label={ar ? `الاتجاهات إلى ${text(p, "title")}` : `Directions to ${text(p, "title")}`} title={ar ? "الاتجاهات" : "Directions"}>↗</a>
-                <button className="mobile-place-list-action details" type="button" onClick={() => { setSelected(p); setMobilePlaceDetailsOpen(true); }} aria-label={ar ? `تفاصيل ${text(p, "title")}` : `Details for ${text(p, "title")}`} title={ar ? "تفاصيل المكان" : "Place details"}>ⓘ</button>
-              </div>
+              <button
+                className={selected.id === p.id ? "selected" : ""}
+                onClick={() => selectFromList(p)}
+                key={p.id}
+              >
+                <img src={p.photo} alt="" />
+                <span>
+                  <b>{text(p, "title")}</b>
+                  <small>{userLocation ? `${distanceInKm(userLocation, p).toFixed(1)} ${ar ? "كم" : "km"} · ${cityLabel(p)} · ${text(p, "type")}` : `${cityLabel(p)} · ${text(p, "type")}`}</small>
+                </span>
+                <i>↗</i>
+              </button>
             ))}
           </div>
         </aside>
@@ -682,6 +682,10 @@ export default function Home() {
                 : "Interactive map of Makkah and Madinah"
             }
           />
+          <div className="mobile-place-actions">
+            <button type="button" onClick={() => setMobilePlaceDetailsOpen(true)}>{ar ? "تفاصيل المكان" : "Place details"}</button>
+            <a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`}>{ar ? "الاتجاهات" : "Directions"} ↗</a>
+          </div>
         </div>
         <article className="card">
           {!placesReady ? <div className="place-loading">{ar ? "جارٍ تحميل الأماكن…" : "Loading places…"}</div> : <><img src={selected.photo} alt={text(selected, "title")} />
