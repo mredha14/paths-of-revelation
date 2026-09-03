@@ -26,6 +26,30 @@ type TaxonomyItem = { id: number; slug: string; nameAr: string; nameEn: string }
 type UserLocation = { lat: number; lng: number };
 const NEARBY_RADIUS_KM = 50;
 
+const optimizedPlaceImage = (source: string, width: number) => {
+  try {
+    const image = new URL(source);
+    if (image.hostname !== "images.unsplash.com") return source;
+    image.searchParams.set("auto", "format");
+    image.searchParams.set("fit", "crop");
+    image.searchParams.set("w", String(width));
+    image.searchParams.set("q", "72");
+    return image.toString();
+  } catch {
+    return source;
+  }
+};
+
+const placeImageSrcSet = (source: string, widths: number[]) => {
+  try {
+    return new URL(source).hostname === "images.unsplash.com"
+      ? widths.map((width) => `${optimizedPlaceImage(source, width)} ${width}w`).join(", ")
+      : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 const distanceInKm = (from: UserLocation, to: Pick<Place, "lat" | "lng">) => {
   const radians = (degrees: number) => (degrees * Math.PI) / 180;
   const earthRadiusKm = 6371;
@@ -672,7 +696,7 @@ export default function Home() {
                   className={`place-select ${selected.id === p.id ? "selected" : ""}`}
                   onClick={() => selectFromList(p)}
                 >
-                  <img src={p.photo} alt="" />
+                  <img className="place-thumbnail" src={optimizedPlaceImage(p.photo, 128)} width={43} height={43} loading="lazy" decoding="async" alt="" />
                   <span>
                     <b>{text(p, "title")}</b>
                     <small>{userLocation ? `${distanceInKm(userLocation, p).toFixed(1)} ${ar ? "كم" : "km"} · ${cityLabel(p)} · ${text(p, "type")}` : `${cityLabel(p)} · ${text(p, "type")}`}</small>
@@ -699,7 +723,7 @@ export default function Home() {
         </div>
         </div>
         <article className="card">
-          {!placesReady ? <div className="place-loading">{ar ? "جارٍ تحميل الأماكن…" : "Loading places…"}</div> : <><img src={selected.photo} alt={text(selected, "title")} />
+          {!placesReady ? <div className="place-loading">{ar ? "جارٍ تحميل الأماكن…" : "Loading places…"}</div> : <><img className="place-card-image" src={optimizedPlaceImage(selected.photo, 960)} srcSet={placeImageSrcSet(selected.photo, [480, 768, 960])} sizes="(max-width: 720px) 100vw, (max-width: 1050px) 430px, 370px" width={960} height={520} loading="lazy" decoding="async" alt={text(selected, "title")} />
           <div>
             <p>
               {ar ? cityLabel(selected) : cityLabel(selected).toUpperCase()}{" "}
@@ -731,7 +755,7 @@ export default function Home() {
         <div className="backdrop place-details-backdrop" onClick={() => setPlaceDetailsOpen(false)}>
           <article className="place-details-modal" onClick={(e) => e.stopPropagation()}>
             <button className="close" type="button" onClick={() => setPlaceDetailsOpen(false)} aria-label={ar ? "إغلاق التفاصيل" : "Close details"}>×</button>
-            <img src={selected.photo} alt={text(selected, "title")} />
+            <img className="place-card-image" src={optimizedPlaceImage(selected.photo, 960)} srcSet={placeImageSrcSet(selected.photo, [480, 768, 960])} sizes="(max-width: 720px) 100vw, 430px" width={960} height={520} decoding="async" alt={text(selected, "title")} />
             <div>
               <p>{ar ? cityLabel(selected) : cityLabel(selected).toUpperCase()} · {text(selected, "type")}</p>
               <section>
@@ -792,7 +816,7 @@ export default function Home() {
               <small>{openFavoriteList.placeIds.length ? (ar ? "اختر مكاناً لعرضه على الخريطة." : "Choose a place to view it on the map.") : (ar ? "هذه القائمة فارغة حتى الآن." : "This list is empty for now.")}</small>
               <div className="favorite-list-actions"><button type="button" disabled={favoriteBusy} onClick={() => shareFavoriteList(false)}>{ar ? "نسخ الرابط" : "Copy link"}</button>{typeof navigator !== "undefined" && "share" in navigator && <button type="button" disabled={favoriteBusy} onClick={() => shareFavoriteList(true)}>{ar ? "مشاركة" : "Share"}</button>}<button type="button" disabled={favoriteBusy} onClick={() => deleteFavoriteList(openFavoriteList.id)} className="delete-list-button">{ar ? "حذف القائمة" : "Delete list"}</button></div>
               <div className="favorite-place-items">
-                {allPlaces.filter((place) => openFavoriteList.placeIds.includes(place.id)).map((place) => <div className="favorite-place-row" key={place.id}><button className="favorite-place-select" onClick={() => { selectFromList(place); setListsOpen(false); setOpenFavoriteListId(null); }}><img src={place.photo} alt="" /><span><b>{text(place, "title")}</b><small>{place.city}</small></span></button><button className="favorite-place-icon" type="button" aria-label={ar ? "عرض المكان على الخريطة" : "View place on map"} title={ar ? "عرض المكان على الخريطة" : "View place on map"} onClick={() => { selectFromList(place); setListsOpen(false); setOpenFavoriteListId(null); }}>↗</button><button className="favorite-place-icon delete" type="button" disabled={favoriteBusy} aria-label={ar ? "إزالة من القائمة" : "Remove from list"} title={ar ? "إزالة من القائمة" : "Remove from list"} onClick={() => removePlaceFromFavoriteList(openFavoriteList.id, place.id)}>🗑</button></div>)}
+                {allPlaces.filter((place) => openFavoriteList.placeIds.includes(place.id)).map((place) => <div className="favorite-place-row" key={place.id}><button className="favorite-place-select" onClick={() => { selectFromList(place); setListsOpen(false); setOpenFavoriteListId(null); }}><img className="place-thumbnail" src={optimizedPlaceImage(place.photo, 128)} width={52} height={52} loading="lazy" decoding="async" alt="" /><span><b>{text(place, "title")}</b><small>{place.city}</small></span></button><button className="favorite-place-icon" type="button" aria-label={ar ? "عرض المكان على الخريطة" : "View place on map"} title={ar ? "عرض المكان على الخريطة" : "View place on map"} onClick={() => { selectFromList(place); setListsOpen(false); setOpenFavoriteListId(null); }}>↗</button><button className="favorite-place-icon delete" type="button" disabled={favoriteBusy} aria-label={ar ? "إزالة من القائمة" : "Remove from list"} title={ar ? "إزالة من القائمة" : "Remove from list"} onClick={() => removePlaceFromFavoriteList(openFavoriteList.id, place.id)}>🗑</button></div>)}
               </div>
               {favoriteError && <p className="form-error">{favoriteError}</p>}
             </> : <>

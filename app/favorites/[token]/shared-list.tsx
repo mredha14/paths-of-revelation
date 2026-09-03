@@ -7,6 +7,30 @@ import "leaflet/dist/leaflet.css";
 type Place = { id:number; city:string; cityAr:string; title:string; titleEn:string; type:string; typeEn:string; era:string; eraEn:string; description:string; descriptionEn:string; lat:number; lng:number; photo:string };
 type SharedList = { title: string; places: Place[] };
 
+const optimizedPlaceImage = (source: string, width: number) => {
+  try {
+    const image = new URL(source);
+    if (image.hostname !== "images.unsplash.com") return source;
+    image.searchParams.set("auto", "format");
+    image.searchParams.set("fit", "crop");
+    image.searchParams.set("w", String(width));
+    image.searchParams.set("q", "72");
+    return image.toString();
+  } catch {
+    return source;
+  }
+};
+
+const placeImageSrcSet = (source: string, widths: number[]) => {
+  try {
+    return new URL(source).hostname === "images.unsplash.com"
+      ? widths.map((width) => `${optimizedPlaceImage(source, width)} ${width}w`).join(", ")
+      : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 export default function SharedList({ shareToken }: { shareToken: string }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<HTMLElement>(null);
@@ -49,10 +73,10 @@ export default function SharedList({ shareToken }: { shareToken: string }) {
     <header><a className="brand" href="/"><span><img src="/paths-of-revelation-logo.png" alt="" /></span><b>{ar ? "دروب الوحي" : "Paths of Revelation"}<small>{ar ? "خريطة السيرة النبوية" : "A map of prophetic heritage"}</small></b></a><nav><button onClick={() => setLanguage(ar ? "en" : "ar")}>{ar ? "English" : "العربية"}</button></nav></header>
     <section className="shared-list-title"><p>{ar ? "قائمة مفضلة مشتركة" : "SHARED FAVORITE LIST"}</p><h1>{shared?.title ?? (ar ? "جارٍ تحميل القائمة…" : "Loading list…")}</h1></section>
     {error ? <section className="shared-empty"><h1>{ar ? "القائمة غير متاحة" : "List unavailable"}</h1><p>{error}</p><a href="/">{ar ? "العودة إلى الخريطة" : "Back to the map"}</a></section> : <section className="workspace shared-workspace" ref={workspaceRef}>
-      <aside className="explorer"><div className="explorer-heading"><h2>{ar ? "الأماكن" : "Places"}</h2><span className="place-count">{shared?.places.length ?? 0}</span></div><p className="shared-list-subtitle">{ar ? "أماكن هذه القائمة" : "Places in this list"}</p><div className="place-list">{shared?.places.map((place) => <div className="place-row" key={place.id}><button className={`place-select ${selected?.id === place.id ? "selected" : ""}`} onClick={() => choose(place)}><img src={place.photo} alt=""/><span><b>{text(place, "title")}</b><small>{cityLabel(place)} · {text(place, "type")}</small></span><i>‹</i></button><button className="place-details-button" type="button" onClick={() => openPlaceDetails(place)} aria-label={ar ? `تفاصيل ${text(place, "title")}` : `Details for ${text(place, "title")}`} title={ar ? "عرض التفاصيل" : "View details"}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /></svg></button></div>)}{shared && !shared.places.length && <small>{ar ? "لا توجد أماكن في هذه القائمة بعد." : "This list does not contain any places yet."}</small>}</div><footer>{ar ? "دروب الوحي — قائمة أماكن مشتركة" : "Paths of Revelation — Shared place list"}</footer></aside>
+      <aside className="explorer"><div className="explorer-heading"><h2>{ar ? "الأماكن" : "Places"}</h2><span className="place-count">{shared?.places.length ?? 0}</span></div><p className="shared-list-subtitle">{ar ? "أماكن هذه القائمة" : "Places in this list"}</p><div className="place-list">{shared?.places.map((place) => <div className="place-row" key={place.id}><button className={`place-select ${selected?.id === place.id ? "selected" : ""}`} onClick={() => choose(place)}><img className="place-thumbnail" src={optimizedPlaceImage(place.photo, 128)} width={43} height={43} loading="lazy" decoding="async" alt=""/><span><b>{text(place, "title")}</b><small>{cityLabel(place)} · {text(place, "type")}</small></span><i>‹</i></button><button className="place-details-button" type="button" onClick={() => openPlaceDetails(place)} aria-label={ar ? `تفاصيل ${text(place, "title")}` : `Details for ${text(place, "title")}`} title={ar ? "عرض التفاصيل" : "View details"}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /></svg></button></div>)}{shared && !shared.places.length && <small>{ar ? "لا توجد أماكن في هذه القائمة بعد." : "This list does not contain any places yet."}</small>}</div><footer>{ar ? "دروب الوحي — قائمة أماكن مشتركة" : "Paths of Revelation — Shared place list"}</footer></aside>
       <section className="map-area"><div ref={mapRef} className="map" /></section>
-      <article className="card">{selected ? <><img src={selected.photo} alt={text(selected, "title")}/><div><p>{cityLabel(selected)} · {text(selected, "type")}</p><section><h2>{text(selected, "title")}</h2></section><p className="description">{text(selected, "description")}</p><nav><a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`}>{ar ? "الاتجاهات" : "Directions"} ↗</a></nav></div></> : <div className="shared-card-empty">{ar ? "اختر مكاناً من القائمة." : "Choose a place from the list."}</div>}</article>
+      <article className="card">{selected ? <><img className="place-card-image" src={optimizedPlaceImage(selected.photo, 960)} srcSet={placeImageSrcSet(selected.photo, [480, 768, 960])} sizes="(max-width: 720px) 100vw, (max-width: 1050px) 430px, 370px" width={960} height={520} loading="lazy" decoding="async" alt={text(selected, "title")}/><div><p>{cityLabel(selected)} · {text(selected, "type")}</p><section><h2>{text(selected, "title")}</h2></section><p className="description">{text(selected, "description")}</p><nav><a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`}>{ar ? "الاتجاهات" : "Directions"} ↗</a></nav></div></> : <div className="shared-card-empty">{ar ? "اختر مكاناً من القائمة." : "Choose a place from the list."}</div>}</article>
     </section>}
-    {placeDetailsOpen && selected && <div className="backdrop place-details-backdrop" onClick={() => setPlaceDetailsOpen(false)}><article className="place-details-modal" onClick={(event) => event.stopPropagation()}><button className="close" type="button" onClick={() => setPlaceDetailsOpen(false)} aria-label={ar ? "إغلاق التفاصيل" : "Close details"}>×</button><img src={selected.photo} alt={text(selected, "title")}/><div><p>{cityLabel(selected)} · {text(selected, "type")}</p><section><h2>{text(selected, "title")}</h2></section><p className="description">{text(selected, "description")}</p><nav><a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`}>{ar ? "الاتجاهات" : "Directions"} ↗</a></nav></div></article></div>}
+    {placeDetailsOpen && selected && <div className="backdrop place-details-backdrop" onClick={() => setPlaceDetailsOpen(false)}><article className="place-details-modal" onClick={(event) => event.stopPropagation()}><button className="close" type="button" onClick={() => setPlaceDetailsOpen(false)} aria-label={ar ? "إغلاق التفاصيل" : "Close details"}>×</button><img className="place-card-image" src={optimizedPlaceImage(selected.photo, 960)} srcSet={placeImageSrcSet(selected.photo, [480, 768, 960])} sizes="(max-width: 720px) 100vw, 430px" width={960} height={520} decoding="async" alt={text(selected, "title")}/><div><p>{cityLabel(selected)} · {text(selected, "type")}</p><section><h2>{text(selected, "title")}</h2></section><p className="description">{text(selected, "description")}</p><nav><a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`}>{ar ? "الاتجاهات" : "Directions"} ↗</a></nav></div></article></div>}
   </main>;
 }
