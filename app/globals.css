@@ -37,3 +37,4 @@ main[dir=rtl] .card .description{font-family:'Thmanyah Text','DM Sans',sans-seri
 .place-list .place-details-button{display:none}
 @media(min-width:1051px){.place-list .place-row{display:block}.place-list .place-select{width:100%}}
 @media(max-width:1050px){.place-list .place-details-button{display:grid}.place-admin-actions{display:flex;gap:8px;margin-top:12px}.place-admin-actions button{flex:1;border:1px solid #315e4c;background:transparent;color:#315e4c;padding:9px;font-size:12px;font-weight:400}.place-admin-actions button:last-child{border-color:#b45a4a;color:#9a493a}}
+@media(max-width:1050px){.place-details-modal .description{font-family:'Thmanyah Text','DM Sans',sans-serif}}
