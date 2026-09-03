@@ -28,7 +28,7 @@ export default function SharedList({ shareToken }: { shareToken: string }) {
   const choose = (place: Place) => { setSelected(place); mapInstance.current?.flyTo([place.lat, place.lng], Math.max(mapInstance.current.getZoom(), 14), { duration: .65 }); };
   const openPlaceDetails = (place: Place) => { choose(place); setPlaceDetailsOpen(true); };
 
-  return <main className="site" dir={ar ? "rtl" : "ltr"}>
+  return <main className="site shared-list-page" dir={ar ? "rtl" : "ltr"}>
     <header><a className="brand" href="/"><span><img src="/paths-of-revelation-logo.png" alt="" /></span><b>{ar ? "دروب الوحي" : "Paths of Revelation"}<small>{ar ? "خريطة السيرة النبوية" : "A map of prophetic heritage"}</small></b></a><nav><button onClick={() => setLanguage(ar ? "en" : "ar")}>{ar ? "English" : "العربية"}</button></nav></header>
     <section className="shared-list-title"><p>{ar ? "قائمة مفضلة مشتركة" : "SHARED FAVORITE LIST"}</p><h1>{shared?.title ?? (ar ? "جارٍ تحميل القائمة…" : "Loading list…")}</h1></section>
     {error ? <section className="shared-empty"><h1>{ar ? "القائمة غير متاحة" : "List unavailable"}</h1><p>{error}</p><a href="/">{ar ? "العودة إلى الخريطة" : "Back to the map"}</a></section> : <section className="workspace shared-workspace">
