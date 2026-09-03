@@ -436,6 +436,11 @@ export default function Home() {
     selectFromList(place);
     setPlaceDetailsOpen(true);
   };
+  const openEditPlace = () => {
+    setEditForm({ title: selected.title, titleEn: selected.titleEn, description: selected.description, descriptionEn: selected.descriptionEn, city: cities.find((item) => item.nameEn === selected.city || item.nameAr === selected.city)?.slug ?? selected.city.toLowerCase(), category: categories.find((item) => item.nameEn === selected.typeEn || item.nameAr === selected.type)?.slug ?? selected.typeEn.toLowerCase(), coordinates: `${selected.lat}, ${selected.lng}`, lat: String(selected.lat), lng: String(selected.lng) });
+    setEditPhotoFile(null);
+    setEditOpen(true);
+  };
   const captureLocation = () => {
     if (!navigator.geolocation) {
       setLocationError(ar ? "تحديد الموقع غير مدعوم في هذا المتصفح." : "Location is not supported by this browser.");
@@ -718,7 +723,7 @@ export default function Home() {
                 {ar ? "أضف إلى المفضلة" : "Add to favorites"} +
               </button>
             </nav>
-                {account?.role === "admin" && <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button disabled={saving} onClick={() => { setEditForm({title:selected.title,titleEn:selected.titleEn,description:selected.description,descriptionEn:selected.descriptionEn,city:cities.find(item=>item.nameEn===selected.city||item.nameAr===selected.city)?.slug??selected.city.toLowerCase(),category:categories.find(item=>item.nameEn===selected.typeEn||item.nameAr===selected.type)?.slug??selected.typeEn.toLowerCase(),coordinates:`${selected.lat}, ${selected.lng}`,lat:String(selected.lat),lng:String(selected.lng)}); setEditPhotoFile(null); setEditOpen(true); }} style={{ flex: 1, border: "1px solid #315e4c", background: "transparent", color: "#315e4c", padding: "9px", fontSize: 12, fontWeight: 400 }}>{ar ? "تعديل الموقع" : "Edit place"}</button><button disabled={saving} onClick={deletePlace} style={{ flex: 1, border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", padding: "9px", fontSize: 12, fontWeight: 400 }}>{ar ? "حذف الموقع" : "Delete place"}</button></div>}
+                {account?.role === "admin" && <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button disabled={saving} onClick={openEditPlace} style={{ flex: 1, border: "1px solid #315e4c", background: "transparent", color: "#315e4c", padding: "9px", fontSize: 12, fontWeight: 400 }}>{ar ? "تعديل الموقع" : "Edit place"}</button><button disabled={saving} onClick={deletePlace} style={{ flex: 1, border: "1px solid #b45a4a", background: "transparent", color: "#9a493a", padding: "9px", fontSize: 12, fontWeight: 400 }}>{ar ? "حذف الموقع" : "Delete place"}</button></div>}
           </div></>}
         </article>
       </section>
@@ -740,6 +745,7 @@ export default function Home() {
                 <a target="_blank" href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`}>{ar ? "الاتجاهات" : "Directions"} ↗</a>
                 <button onClick={() => { setPlaceDetailsOpen(false); openFavoritePicker(selected); }}>{ar ? "أضف إلى المفضلة" : "Add to favorites"} +</button>
               </nav>
+              {account?.role === "admin" && <div className="place-admin-actions"><button disabled={saving} onClick={() => { setPlaceDetailsOpen(false); openEditPlace(); }}>{ar ? "تعديل الموقع" : "Edit place"}</button><button disabled={saving} onClick={() => { setPlaceDetailsOpen(false); deletePlace(); }}>{ar ? "حذف الموقع" : "Delete place"}</button></div>}
             </div>
           </article>
         </div>
