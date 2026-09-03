@@ -139,6 +139,7 @@ export default function Home() {
   const [allPlaces, setAllPlaces] = useState<Place[]>(places);
   const [placesReady, setPlacesReady] = useState(false);
   const [selected, setSelected] = useState(places[0]);
+  const [placeDetailsOpen, setPlaceDetailsOpen] = useState(false);
   const [favoriteLists, setFavoriteLists] = useState<FavoriteList[]>([]);
   const [listsOpen, setListsOpen] = useState(false);
   const [openFavoriteListId, setOpenFavoriteListId] = useState<number | null>(null);
@@ -294,6 +295,7 @@ export default function Home() {
       });
       marker.on("click", () => {
         setSelected(place);
+        if (window.matchMedia("(max-width: 1050px)").matches) setPlaceDetailsOpen(true);
         map.flyTo([place.lat, place.lng], Math.max(map.getZoom(), 14), {
           duration: 0.65,
         });
@@ -429,6 +431,10 @@ export default function Home() {
         animate: true,
         duration: 0.65,
       });
+  };
+  const openPlaceDetails = (place: Place) => {
+    selectFromList(place);
+    setPlaceDetailsOpen(true);
   };
   const captureLocation = () => {
     if (!navigator.geolocation) {
@@ -656,18 +662,22 @@ export default function Home() {
           {locationError && <p className="nearby-error">{locationError}</p>}
           <div className="place-list">
             {displayedPlaces.map((p) => (
-              <button
-                className={selected.id === p.id ? "selected" : ""}
-                onClick={() => selectFromList(p)}
-                key={p.id}
-              >
-                <img src={p.photo} alt="" />
-                <span>
-                  <b>{text(p, "title")}</b>
-                  <small>{userLocation ? `${distanceInKm(userLocation, p).toFixed(1)} ${ar ? "كم" : "km"} · ${cityLabel(p)} · ${text(p, "type")}` : `${cityLabel(p)} · ${text(p, "type")}`}</small>
-                </span>
-                <i>↗</i>
-              </button>
+              <div className="place-row" key={p.id}>
+                <button
+                  className={`place-select ${selected.id === p.id ? "selected" : ""}`}
+                  onClick={() => selectFromList(p)}
+                >
+                  <img src={p.photo} alt="" />
+                  <span>
+                    <b>{text(p, "title")}</b>
+                    <small>{userLocation ? `${distanceInKm(userLocation, p).toFixed(1)} ${ar ? "كم" : "km"} · ${cityLabel(p)} · ${text(p, "type")}` : `${cityLabel(p)} · ${text(p, "type")}`}</small>
+                  </span>
+                  <i>↗</i>
+                </button>
+                <button className="place-details-button" type="button" onClick={() => openPlaceDetails(p)} aria-label={ar ? `تفاصيل ${text(p, "title")}` : `Details for ${text(p, "title")}`} title={ar ? "عرض التفاصيل" : "View details"}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>
+                </button>
+              </div>
             ))}
           </div>
         </aside>
@@ -712,6 +722,28 @@ export default function Home() {
           </div></>}
         </article>
       </section>
+      {placeDetailsOpen && (
+        <div className="backdrop place-details-backdrop" onClick={() => setPlaceDetailsOpen(false)}>
+          <article className="place-details-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="close" type="button" onClick={() => setPlaceDetailsOpen(false)} aria-label={ar ? "إغلاق التفاصيل" : "Close details"}>×</button>
+            <img src={selected.photo} alt={text(selected, "title")} />
+            <div>
+              <p>{ar ? cityLabel(selected) : cityLabel(selected).toUpperCase()} · {text(selected, "type")}</p>
+              <section>
+                <h2>{text(selected, "title")}</h2>
+                <button aria-label={ar ? "إضافة إلى قائمة مفضلة" : "Add to a favorite list"} onClick={() => { setPlaceDetailsOpen(false); openFavoritePicker(selected); }}>
+                  {favoriteLists.some((list) => list.placeIds.includes(selected.id)) ? "♥" : "♡"}
+                </button>
+              </section>
+              <p className="description">{text(selected, "description")}</p>
+              <nav>
+                <a target="_blank" href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}`}>{ar ? "الاتجاهات" : "Directions"} ↗</a>
+                <button onClick={() => { setPlaceDetailsOpen(false); openFavoritePicker(selected); }}>{ar ? "أضف إلى المفضلة" : "Add to favorites"} +</button>
+              </nav>
+            </div>
+          </article>
+        </div>
+      )}
       <section className="principles">
         <div>
           <span>01</span>
