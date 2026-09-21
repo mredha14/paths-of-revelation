@@ -45,3 +45,6 @@ main[dir=rtl] .card .description{font-family:'Thmanyah Text','DM Sans',sans-seri
 @media(max-width:720px){.shared-list-page{display:block;min-height:0}.shared-list-page>header>nav{display:flex!important}.shared-list-page>header>nav button{display:block!important}.shared-list-page .shared-workspace{height:100dvh!important;min-height:100dvh!important;flex:none}}
 .shared-workspace .explorer-heading>.place-count{display:grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:50%;background:var(--gold);color:#fff;font-size:11px;font-weight:700;line-height:1}
 @media(min-width:721px){.site:not(.shared-list-page) .workspace{height:max(610px,100vh);height:max(610px,100dvh)}}
+@media(min-width:721px){.shared-list-page .shared-workspace{height:max(610px,100vh);height:max(610px,100dvh)}}
+/* Keep a long place list inside the map workspace instead of growing its grid row. */
+@media(min-width:721px){.workspace{grid-template-rows:minmax(0,1fr)}.explorer,.map-area{min-height:0}.place-list{overflow-y:auto;overscroll-behavior:contain}}
