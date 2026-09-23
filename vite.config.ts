@@ -15,7 +15,9 @@ const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === 'seatbelt';
 
 const localBindingConfig = {
   main: 'vinext/server/app-router-entry',
-  compatibility_flags: ['nodejs_compat'],
+  // `nodejs_compat` is declared once in `wrangler.jsonc`; declaring it here too
+  // makes the Cloudflare plugin merge a duplicate flag and the runtime refuses
+  // to start ("Compatibility flag specified multiple times: nodejs_compat").
   d1_databases: d1
     ? [
         {
@@ -41,6 +43,19 @@ const productionBindingConfig = {
   r2_buckets: [],
 };
 
+// Local development can talk to the real Cloudflare resources so the app
+// mirrors production data. `wrangler.jsonc` marks its D1/R2 bindings
+// `remote: true`, so omitting them here lets those real bound resources apply
+// (Wrangler proxies to Cloudflare instead of simulating them locally).
+// Authentication (CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID, or
+// `wrangler login`) is required. Set `REMOTE_BINDINGS=0` to use the isolated
+// local placeholders in `localBindingConfig` instead.
+const useRemoteBindings = process.env.REMOTE_BINDINGS !== '0';
+
+const remoteBindingConfig = {
+  main: 'vinext/server/app-router-entry',
+};
+
 export default defineConfig(({ command }) => {
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
   // settings; application environment belongs in ignored `.env*` files.
@@ -58,9 +73,16 @@ export default defineConfig(({ command }) => {
       sites(),
       cloudflare({
         viteEnvironment: { name: 'rsc', childEnvironments: ['ssr'] },
+        remoteBindings: true,
         // The production Worker receives its real bindings from
-        // `wrangler.jsonc`; local previews use harmless placeholder metadata.
-        config: command === 'serve' ? localBindingConfig : productionBindingConfig,
+        // `wrangler.jsonc`. Local previews use the real remote Cloudflare
+        // resources by default; `REMOTE_BINDINGS=0` uses local placeholders.
+        config:
+          command === 'serve'
+            ? useRemoteBindings
+              ? remoteBindingConfig
+              : localBindingConfig
+            : productionBindingConfig,
       }),
     ],
   };
