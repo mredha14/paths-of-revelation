@@ -8,7 +8,8 @@ export async function GET(request: Request) {
   if (!identity)
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   const db = getDb();
-  const username = String(identity.user.email ?? "member").toLowerCase();
+  const email = String(identity.user.email ?? "member").toLowerCase();
+  const username = email.split("@")[0] || "member";
   const current = await db
     .select()
     .from(profiles)
@@ -21,8 +22,12 @@ export async function GET(request: Request) {
         .insert(profiles)
         .values({
           authSubject: identity.user.id,
-          username,
-    displayName: String(identity.user.user_metadata.full_name ?? username),
+          username: email,
+          displayName: String(
+            identity.user.user_metadata.full_name ??
+              identity.user.user_metadata.username ??
+              username,
+          ),
           role: identity.role,
           createdAt: new Date(),
         })
@@ -31,7 +36,12 @@ export async function GET(request: Request) {
   return Response.json({
     id: profile.id,
     username: profile.username,
-    displayName: String(identity.user.user_metadata.full_name ?? profile.displayName ?? profile.username),
+    displayName: String(
+      identity.user.user_metadata.full_name ??
+        identity.user.user_metadata.username ??
+        (profile.displayName?.includes("@") ? username : profile.displayName) ??
+        username,
+    ),
     role: identity.role,
     email: identity.user.email,
   });
