@@ -1,21 +1,21 @@
-import { getDb } from '@/db';
-import { itineraries, itineraryStops, profiles } from '@/db/schema';
+import { nextId, readStore, updateStore } from '@/lib/store';
 import { requireSupabaseUser } from '@/lib/supabase';
-import { eq } from 'drizzle-orm';
+
+export const dynamic = 'force-dynamic';
 
 async function profileFor(request: Request) {
   const identity = await requireSupabaseUser(request);
   if (!identity) return null;
-  const db = getDb();
-  const found = await db.select().from(profiles).where(eq(profiles.authSubject, identity.user.id)).get();
-  return found ? { db, profile: found } : null;
+  const store = await readStore();
+  const profile = store.profiles.find((item) => item.authSubject === identity.user.id);
+  return profile ? { profile } : null;
 }
 
 export async function GET(request: Request) {
   const current = await profileFor(request);
   if (!current) return Response.json({ error: 'Sign in required.' }, { status: 401 });
-  const lists = await current.db.select().from(itineraries).where(eq(itineraries.profileId, current.profile.id)).all();
-  return Response.json(lists);
+  const store = await readStore();
+  return Response.json(store.itineraries.filter((list) => list.profileId === current.profile.id));
 }
 
 export async function POST(request: Request) {
@@ -23,9 +23,29 @@ export async function POST(request: Request) {
   if (!current) return Response.json({ error: 'Sign in required.' }, { status: 401 });
   const body = await request.json() as { title?: string; placeId?: number };
   if (!body.title?.trim()) return Response.json({ error: 'A list name is required.' }, { status: 400 });
-  const now = new Date();
+  const now = Date.now();
   const token = crypto.randomUUID().replace(/-/g, '');
-  const [list] = await current.db.insert(itineraries).values({ profileId: current.profile.id, title: body.title.trim(), shareToken: token, isPublic: true, createdAt: now, updatedAt: now }).returning();
-  if (body.placeId) await current.db.insert(itineraryStops).values({ itineraryId: list.id, placeId: body.placeId, dayNumber: 1, position: 0 });
+  const list = await updateStore((store) => {
+    const created = {
+      id: nextId(store, 'itinerary'),
+      profileId: current.profile.id,
+      title: body.title!.trim(),
+      shareToken: token,
+      isPublic: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    store.itineraries.push(created);
+    if (body.placeId) {
+      store.itineraryStops.push({
+        id: nextId(store, 'itineraryStop'),
+        itineraryId: created.id,
+        placeId: body.placeId,
+        dayNumber: 1,
+        position: 0,
+      });
+    }
+    return structuredClone(created);
+  });
   return Response.json(list);
 }

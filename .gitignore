@@ -25,15 +25,24 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.tsbuildinfo
 
 # local environment
 .env*
+!.env.example
 .dev.vars
 
 # deployment and generated files
 .vercel
 next-env.d.ts
 /dist/
+/dist-hostinger/
 /.wrangler/
 /outputs/
 /work/
+
+# Hostinger runtime data. The importable seed remains in data/seed.json.
+/data/store.json
+/data/store.json.tmp
+/data/uploads/*
+!/data/uploads/.gitkeep

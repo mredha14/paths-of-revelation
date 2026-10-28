@@ -1,2 +1,32 @@
-import { env } from 'cloudflare:workers';
-export async function GET(_r:Request,c:{params:Promise<{key:string[]}>}){const o=await env.FILES.get((await c.params).key.join('/'));return o?new Response(o.body,{headers:{'Content-Type':o.httpMetadata?.contentType??'image/jpeg'}}):new Response('Not found',{status:404});}
+import { readPhoto } from '@/lib/store';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+const contentTypeFor = (key: string) => {
+  const extension = key.split('.').at(-1)?.toLowerCase();
+  return ({
+    avif: 'image/avif',
+    gif: 'image/gif',
+    jpeg: 'image/jpeg',
+    jpg: 'image/jpeg',
+    png: 'image/png',
+    svg: 'image/svg+xml',
+    webp: 'image/webp',
+  } as Record<string, string>)[extension ?? ''] ?? 'application/octet-stream';
+};
+
+export async function GET(_request: Request, context: { params: Promise<{ key: string[] }> }) {
+  const key = (await context.params).key.join('/');
+  try {
+    const contents = await readPhoto(key);
+    return new Response(new Uint8Array(contents), {
+      headers: {
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Content-Type': contentTypeFor(key),
+      },
+    });
+  } catch {
+    return new Response('Not found', { status: 404 });
+  }
+}

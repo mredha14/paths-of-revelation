@@ -1,31 +1,17 @@
 # Paths of Revelation
 
-This app uses Cloudflare for its runtime services and Supabase only for authentication:
-
-- **Cloudflare D1 (`DB`)** stores places, profiles, favourites, lists, and taxonomy.
-- **Cloudflare R2 (`FILES`)** stores uploaded place photos.
-- **Supabase Auth** signs users in; the app verifies their access token on the server.
-
-## Cloudflare
-
-The project is connected to the D1 database **`paths-of-revelation`** (ID `87bd5b18-3717-435c-a507-461322e8cea2`) in `wrangler.jsonc`.
-
-Before the first deployment, create an R2 bucket named `paths-of-revelation-files` in the same Cloudflare account. Then apply the committed D1 migrations:
-
-```powershell
-npm run db:migrate
-```
-
-`wrangler.jsonc` binds the database as `DB` and the bucket as `FILES`; those names match the application code.
+This app runs as a standard Node.js application on Hostinger. Site content,
+accounts, favorite lists, uploaded photos, and categorization data are stored
+under `data/`; Supabase is used for authentication.
 
 ## Supabase
 
-1. Create or select a Supabase project.
-2. In **Authentication → URL Configuration**, add your Cloudflare production URL and local development URL to the allowed redirect URLs.
-3. In **Authentication → Providers**, enable the sign-in method you want the site to show (email/password is the simplest starting point).
-4. Add the four variables from `.dev.vars.example` as Cloudflare Worker secrets. `SUPABASE_SERVICE_ROLE_KEY` must remain a secret.
+1. In **Authentication → URL Configuration**, add `https://por.zataat.com`.
+2. In **Authentication → Providers**, keep the existing email/password sign-in enabled.
+3. Add `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `ADMIN_EMAIL_ALLOWLIST` to the Hostinger Node.js environment.
+4. `SUPABASE_SERVICE_ROLE_KEY` is optional. Never expose it to the browser.
 
-For local work, copy `.dev.vars.example` to `.dev.vars` and replace the placeholders. The `.dev.vars` file is ignored by Git.
+For local work, copy `.env.example` to `.env.local` and replace the placeholders.
 
 ## Commands
 
@@ -33,5 +19,11 @@ For local work, copy `.dev.vars.example` to `.dev.vars` and replace the placehol
 npm run dev
 npm run build
 npm run lint
-npm run db:migrate
+node scripts/package-hostinger.mjs
 ```
+
+`data/seed.json` contains the imported site content. Runtime edits are written
+to `store.json` inside `DATA_DIR`, which is intentionally excluded from Git.
+On Hostinger, set `DATA_DIR` to a persistent directory such as
+`/home/USER/domains/por.zataat.com/storage`. Back up `store.json` and
+`uploads/` from that directory after content changes.

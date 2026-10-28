@@ -271,8 +271,9 @@ export default function Home() {
     let active = true;
     void import("leaflet").then((module) => {
       if (!active || !mapRef.current || mapInstance.current) return;
-      const L = module.default;
-      leaflet.current = module;
+      const loaded = module as unknown as { default?: typeof import("leaflet") };
+      const L: typeof import("leaflet") = loaded.default ?? module;
+      leaflet.current = L;
       const map = L.map(mapRef.current, {
         scrollWheelZoom: true,
         zoomControl: true,
@@ -295,7 +296,7 @@ export default function Home() {
   }, []);
   useEffect(() => {
     const map = mapInstance.current;
-    const L = leaflet.current?.default;
+    const L = leaflet.current;
     if (!map || !L) return;
     markers.current?.remove();
     const layer = L.layerGroup().addTo(map);

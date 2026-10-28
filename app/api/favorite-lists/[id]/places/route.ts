@@ -1,7 +1,7 @@
-import { and, eq } from 'drizzle-orm';
-import { getDb } from '@/db';
-import { favoriteListPlaces, favoriteLists, profiles } from '@/db/schema';
+import { readStore, updateStore } from '@/lib/store';
 import { requireSupabaseUser } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const identity = await requireSupabaseUser(request);
@@ -9,12 +9,19 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const id = Number((await context.params).id);
   const body = await request.json() as { placeId?: number };
   if (!Number.isInteger(id) || !Number.isInteger(body.placeId)) return Response.json({ error: 'Invalid favorite list.' }, { status: 400 });
-  const db = getDb();
-  const profile = await db.select().from(profiles).where(eq(profiles.authSubject, identity.user.id)).get();
+  const storeSnapshot = await readStore();
+  const profile = storeSnapshot.profiles.find((item) => item.authSubject === identity.user.id);
   if (!profile) return Response.json({ error: 'Profile not found.' }, { status: 404 });
-  const list = await db.select().from(favoriteLists).where(and(eq(favoriteLists.id, id), eq(favoriteLists.profileId, profile.id))).get();
+  const list = storeSnapshot.favoriteLists.find((item) => item.id === id && item.profileId === profile.id);
   if (!list) return Response.json({ error: 'Favorite list not found.' }, { status: 404 });
-  await db.insert(favoriteListPlaces).values({ favoriteListId: id, placeId: body.placeId, createdAt: new Date() }).onConflictDoNothing();
+  if (!storeSnapshot.places.some((place) => place.id === body.placeId)) return Response.json({ error: 'Place not found.' }, { status: 404 });
+  await updateStore((store) => {
+    const current = store.favoriteLists.find((item) => item.id === id && item.profileId === profile.id);
+    if (current && !current.placeIds.includes(body.placeId!)) {
+      current.placeIds.push(body.placeId!);
+      current.updatedAt = Date.now();
+    }
+  });
   return Response.json({ ok: true });
 }
 
@@ -24,11 +31,17 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
   const id = Number((await context.params).id);
   const body = await request.json() as { placeId?: number };
   if (!Number.isInteger(id) || !Number.isInteger(body.placeId)) return Response.json({ error: 'Invalid favorite list.' }, { status: 400 });
-  const db = getDb();
-  const profile = await db.select().from(profiles).where(eq(profiles.authSubject, identity.user.id)).get();
+  const storeSnapshot = await readStore();
+  const profile = storeSnapshot.profiles.find((item) => item.authSubject === identity.user.id);
   if (!profile) return Response.json({ error: 'Profile not found.' }, { status: 404 });
-  const list = await db.select().from(favoriteLists).where(and(eq(favoriteLists.id, id), eq(favoriteLists.profileId, profile.id))).get();
+  const list = storeSnapshot.favoriteLists.find((item) => item.id === id && item.profileId === profile.id);
   if (!list) return Response.json({ error: 'Favorite list not found.' }, { status: 404 });
-  await db.delete(favoriteListPlaces).where(and(eq(favoriteListPlaces.favoriteListId, id), eq(favoriteListPlaces.placeId, body.placeId)));
+  await updateStore((store) => {
+    const current = store.favoriteLists.find((item) => item.id === id && item.profileId === profile.id);
+    if (current) {
+      current.placeIds = current.placeIds.filter((placeId) => placeId !== body.placeId);
+      current.updatedAt = Date.now();
+    }
+  });
   return Response.json({ ok: true });
 }
